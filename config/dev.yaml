@@ -1,0 +1,10 @@
+AWSAccountID: "963662274920"
+App: "HalappOrder"
+Environment: DEVELOPMENT
+Region: eu-central-1
+
+ShouldCreateDynamoOrderDB: "true"
+OrderDBName: HalOrder
+
+UserPoolID: eu-central-1_xGVP5Phra
+UserPoolClientID: 4fq0oja4v9fir2n3uh8mqbi2h0
