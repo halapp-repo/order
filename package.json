@@ -8,7 +8,9 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "esbuild": "node build.js",
+    "debug:create-order": "sam  local invoke -d 9995  -t ./cdk.out/HalappAccountStack.template.json AccountOrganizationEnrollmentHandler -e events/organization-enrollment.event.json --profile default --region eu-central-1"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.109",
@@ -25,7 +27,8 @@
     "@aws-cdk/aws-apigatewayv2-alpha": "^2.56.1-alpha.0",
     "@aws-cdk/aws-apigatewayv2-authorizers-alpha": "^2.56.1-alpha.0",
     "@aws-cdk/aws-apigatewayv2-integrations-alpha": "^2.56.1-alpha.0",
-    "@aws-sdk/client-dynamodb": "^3.238.0",
+    "@aws-sdk/client-dynamodb": "^3.241.0",
+    "@aws-sdk/client-lambda": "^3.241.0",
     "@aws-sdk/lib-dynamodb": "^3.238.0",
     "@middy/core": "^4.0.9",
     "@middy/http-cors": "^4.0.9",
@@ -33,7 +36,9 @@
     "@middy/http-json-body-parser": "^4.0.9",
     "@middy/http-response-serializer": "^4.0.9",
     "@middy/validator": "^4.0.9",
+    "@types/uuid": "^9.0.0",
     "aws-cdk-lib": "^2.57.0",
+    "class-transformer": "^0.5.1",
     "constructs": "^10.0.0",
     "http-errors": "^2.0.0",
     "moment": "^2.29.4",
@@ -41,6 +46,7 @@
     "reflect-metadata": "^0.1.13",
     "source-map-support": "^0.5.21",
     "tsyringe": "^4.7.0",
+    "uuid": "^9.0.0",
     "yaml": "^2.2.0",
     "yup": "^0.32.11"
   }

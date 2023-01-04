@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as path from "path";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apiGateway from "@aws-cdk/aws-apigatewayv2-alpha";
@@ -11,7 +12,6 @@ import { NodejsFunction, LogLevel } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import getConfig from "../config";
 import { BuildConfig } from "./build-config";
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 export class HalappOrderStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -35,12 +35,8 @@ export class HalappOrderStack extends cdk.Stack {
     // **************
     // Create Handlers
     // **************
-    this.createPostOrderCreateHandler(
-      buildConfig,
-      orderApi,
-      authorizer,
-      orderDB
-    );
+    this.createPostOrderHandler(buildConfig, orderApi, authorizer, orderDB);
+    this.createGetOrderHandler(buildConfig, orderApi, authorizer, orderDB);
   }
   createOrderApiGateway(buildConfig: BuildConfig): apiGateway.HttpApi {
     const orderApi = new apiGateway.HttpApi(this, "HalAppOrderApi", {
@@ -117,7 +113,35 @@ export class HalappOrderStack extends cdk.Stack {
       orderTable.addGlobalSecondaryIndex({
         indexName: "OrgIndex",
         partitionKey: {
-          name: "OrgId",
+          name: "OrgID",
+          type: dynamodb.AttributeType.STRING,
+        },
+        sortKey: {
+          name: "TS",
+          type: dynamodb.AttributeType.STRING,
+        },
+        projectionType: dynamodb.ProjectionType.KEYS_ONLY,
+      });
+      orderTable.addGlobalSecondaryIndex({
+        indexName: "StatusIndex",
+        partitionKey: {
+          name: "Status",
+          type: dynamodb.AttributeType.STRING,
+        },
+        sortKey: {
+          name: "OrgID",
+          type: dynamodb.AttributeType.STRING,
+        },
+        projectionType: dynamodb.ProjectionType.ALL,
+      });
+      orderTable.addGlobalSecondaryIndex({
+        indexName: "TypeIndex",
+        partitionKey: {
+          name: "Type",
+          type: dynamodb.AttributeType.STRING,
+        },
+        sortKey: {
+          name: "TS",
           type: dynamodb.AttributeType.STRING,
         },
         projectionType: dynamodb.ProjectionType.ALL,
@@ -125,7 +149,7 @@ export class HalappOrderStack extends cdk.Stack {
     }
     return orderTable;
   }
-  createPostOrderCreateHandler(
+  createPostOrderHandler(
     buildConfig: BuildConfig,
     orderApi: apiGateway.HttpApi,
     authorizer: apiGatewayAuthorizers.HttpUserPoolAuthorizer,
@@ -152,6 +176,7 @@ export class HalappOrderStack extends cdk.Stack {
           NODE_OPTIONS: "--enable-source-maps",
           Region: buildConfig.Region,
           OrderDB: buildConfig.OrderDBName,
+          OrganizationsUserExistsHandler: "OrganizationsUserExists",
         },
       }
     );
@@ -164,7 +189,60 @@ export class HalappOrderStack extends cdk.Stack {
       path: "/orders",
       authorizer,
     });
+    postOrderCreateHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["lambda:InvokeFunction"],
+        resources: ["*"],
+        effect: iam.Effect.ALLOW,
+      })
+    );
     orderDB.grantWriteData(postOrderCreateHandler);
     return postOrderCreateHandler;
+  }
+  createGetOrderHandler(
+    buildConfig: BuildConfig,
+    orderApi: apiGateway.HttpApi,
+    authorizer: apiGatewayAuthorizers.HttpUserPoolAuthorizer,
+    orderDB: cdk.aws_dynamodb.ITable
+  ): cdk.aws_lambda_nodejs.NodejsFunction {
+    const getOrderHandler = new NodejsFunction(this, "OrderFetchHandler", {
+      memorySize: 1024,
+      runtime: lambda.Runtime.NODEJS_18_X,
+      functionName: "OrderFetchHandler",
+      handler: "handler",
+      timeout: cdk.Duration.seconds(15),
+      entry: path.join(__dirname, `/../src/handlers/orders/get/index.ts`),
+      bundling: {
+        target: "es2020",
+        keepNames: true,
+        logLevel: LogLevel.INFO,
+        sourceMap: true,
+        minify: true,
+      },
+      environment: {
+        NODE_OPTIONS: "--enable-source-maps",
+        Region: buildConfig.Region,
+        OrderDB: buildConfig.OrderDBName,
+        OrganizationsUserExistsHandler: "OrganizationsUserExists",
+      },
+    });
+    orderApi.addRoutes({
+      methods: [HttpMethod.GET],
+      integration: new apiGatewayIntegrations.HttpLambdaIntegration(
+        "getOrderHandlerIntegration",
+        getOrderHandler
+      ),
+      path: "/orders",
+      authorizer,
+    });
+    getOrderHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["lambda:InvokeFunction"],
+        resources: ["*"],
+        effect: iam.Effect.ALLOW,
+      })
+    );
+    orderDB.grantReadData(getOrderHandler);
+    return getOrderHandler;
   }
 }

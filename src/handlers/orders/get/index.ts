@@ -4,41 +4,47 @@ import middy from "@middy/core";
 import cors from "@middy/http-cors";
 import httpErrorHandler from "@middy/http-error-handler";
 import httpResponseSerializer from "@middy/http-response-serializer";
-import httpJsonBodyParser from "@middy/http-json-body-parser";
 import {
   Context,
   APIGatewayProxyResult,
   APIGatewayProxyEventV2WithJWTAuthorizer,
 } from "aws-lambda";
-import createHttpError = require("http-errors");
-import { diContainer } from "../../../core/di-registry";
-import OrderService from "../../../services/order.service";
 import schemaValidatorMiddleware from "../../../middlewares/schema-validator.middleware";
-import { inputSchema, CreateOrderDTO } from "./input.schema";
+import { ByOrgDTO, inputSchema } from "./input.schema";
+import { diContainer } from "../../../core/di-registry";
+import createHttpError from "http-errors";
+import OrderService from "../../../services/order.service";
 import OrganizationService from "../../../services/organization.service";
-import { OrderItem } from "../../../models/order";
 import { OrderToOrderViewModelMapper } from "../../../mappers/order-to-order-viewmodel.mapper";
 
 interface Event<TBody>
-  extends Omit<APIGatewayProxyEventV2WithJWTAuthorizer, "body"> {
-  body: TBody;
+  extends Omit<
+    APIGatewayProxyEventV2WithJWTAuthorizer,
+    "queryStringParameters"
+  > {
+  queryStringParameters: TBody;
 }
 
 const lambdaHandler = async function (
-  event: Event<CreateOrderDTO>,
+  event: Event<ByOrgDTO>,
   context: Context
 ): Promise<APIGatewayProxyResult> {
   console.log(JSON.stringify(event, null, 2));
   console.log(JSON.stringify(context, null, 2));
+
   // Resolve dependecies
   const orderService = diContainer.resolve(OrderService);
   const organizationService = diContainer.resolve(OrganizationService);
   const viewModelMapper = diContainer.resolve(OrderToOrderViewModelMapper);
+
   // Get request paramaters
-  const organizationId = event.body.OrganizationId;
+  const organizationId = event.queryStringParameters.OrganizationId;
   const currentUserId = event.requestContext.authorizer.jwt.claims[
     "sub"
   ] as string;
+
+  console.log(JSON.stringify(event.queryStringParameters));
+  console.log(organizationId);
 
   if (!currentUserId) {
     throw createHttpError.Unauthorized();
@@ -51,26 +57,13 @@ const lambdaHandler = async function (
     throw createHttpError.Unauthorized();
   }
 
-  const order = await orderService.create({
-    createdBy: currentUserId,
-    deliveryAddress: event.body.DeliveryAddress,
-    items: event.body.Items.map(
-      (i) =>
-        ({
-          Count: i.Count,
-          Price: i.Price,
-          ProductId: i.ProductId,
-          Unit: i.Unit,
-        } as OrderItem)
-    ),
-    note: event.body.Note,
-    organizationId: event.body.OrganizationId,
-    ts: event.body.TS,
+  const orders = await orderService.getByOrganizationId({
+    orgId: organizationId,
   });
 
   return {
     statusCode: 200,
-    body: JSON.stringify(viewModelMapper.toDTO(order)),
+    body: JSON.stringify(viewModelMapper.toListDTO(orders)),
     headers: {
       "Content-Type": "application/json",
     },
@@ -78,7 +71,6 @@ const lambdaHandler = async function (
 };
 
 const handler = middy(lambdaHandler)
-  .use(httpJsonBodyParser())
   .use(httpResponseSerializer())
   .use(cors())
   .use(
