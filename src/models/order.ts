@@ -95,7 +95,7 @@ class Order extends EventSourceAggregate {
     this.OrganizationId = OrgID;
     this.Status = Status;
     this.DeliveryAddress = plainToInstance(Address, DeliveryAddress);
-    Items.forEach((i) => plainToInstance(OrderItem, i));
+    Items.forEach((i) => this.Items.push(plainToInstance(OrderItem, i)));
     this.CreatedBy = CreatedBy;
     this.Note = Note;
     this.CreatedDate = TS;

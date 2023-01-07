@@ -1,5 +1,9 @@
 import { inject, injectable } from "tsyringe";
-import { BatchWriteCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  BatchGetCommand,
+  BatchWriteCommand,
+  QueryCommand,
+} from "@aws-sdk/lib-dynamodb";
 import { DynamoStore } from "./dynamo-store";
 import createHttpError = require("http-errors");
 import { Order } from "../models/order";

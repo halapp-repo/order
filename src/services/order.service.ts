@@ -4,6 +4,7 @@ import { Address } from "../models/address";
 import { Order, OrderItem } from "../models/order";
 import { OrderStatus } from "../models/order-status";
 import OrderRepository from "../repositories/order.repository";
+import { notEmpty } from "../utils/array";
 import { trMoment } from "../utils/timezone";
 
 @injectable()
@@ -64,15 +65,16 @@ export default class OrderService {
     } else {
       orderIds = await this.repo.getIdsByStatus(status, orgId);
     }
-    const orders: Order[] = [];
+    const orderPromises: Promise<Order | null>[] = [];
     for (const orderId of orderIds || []) {
-      const order = await this.repo.get(orderId);
-      if (order) {
-        orders.push(order);
-      }
+      orderPromises.push(this.repo.get(orderId));
     }
-    return orders.filter(
-      (o) => o.CreatedDate.isAfter(fromDate!) && o.CreatedDate.isBefore(toDate!)
-    );
+    const orders = await Promise.all(orderPromises);
+    return orders
+      .filter(notEmpty)
+      .filter(
+        (o) =>
+          o.CreatedDate.isAfter(fromDate!) && o.CreatedDate.isBefore(toDate!)
+      );
   }
 }

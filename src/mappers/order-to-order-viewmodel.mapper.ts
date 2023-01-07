@@ -1,6 +1,9 @@
 import createHttpError from "http-errors";
 import { Order } from "../models/order";
-import { OrderViewModel } from "../models/viewmodels/order.viewmodel";
+import {
+  OrderItemViewModel,
+  OrderViewModel,
+} from "../models/viewmodels/order.viewmodel";
 import { IMapper } from "./base.mapper";
 
 export class OrderToOrderViewModelMapper extends IMapper<
@@ -28,7 +31,7 @@ export class OrderToOrderViewModelMapper extends IMapper<
           Price: i.Price,
           ProductId: i.ProductId,
           Unit: i.Unit,
-        };
+        } as OrderItemViewModel;
       }),
     };
   }
