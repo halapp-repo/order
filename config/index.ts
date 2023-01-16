@@ -25,7 +25,7 @@ function getConfig(app: cdk.App): BuildConfig {
     readFileSync(resolve(__dirname, `../config/${env}.yaml`), "utf8")
   );
   const buildConfig: BuildConfig = {
-    AWSAccountID: ensureString(unparsedEnv, "AWSAccountID"),
+    AccountID: ensureString(unparsedEnv, "AccountID"),
     App: ensureString(unparsedEnv, "App"),
     Environment: ensureString(unparsedEnv, "Environment"),
     Region: ensureString(unparsedEnv, "Region"),
@@ -36,6 +36,7 @@ function getConfig(app: cdk.App): BuildConfig {
 
     UserPoolID: ensureString(unparsedEnv, "UserPoolID"),
     UserPoolClientID: ensureString(unparsedEnv, "UserPoolClientID"),
+    SNSOrderCreatedTopic: ensureString(unparsedEnv, "SNSOrderCreatedTopic"),
   };
   return buildConfig;
 }

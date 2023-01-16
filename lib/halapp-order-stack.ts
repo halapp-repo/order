@@ -1,4 +1,5 @@
 import * as cdk from "aws-cdk-lib";
+import * as sns from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import * as path from "path";
 import * as iam from "aws-cdk-lib/aws-iam";
@@ -29,14 +30,25 @@ export class HalappOrderStack extends cdk.Stack {
     // ********************
     const orderApi = this.createOrderApiGateway(buildConfig);
     // **************
-    // Create OrderDB
+    // Create DYNAMODB (OrderDB)
     // **************
     const orderDB = this.createOrderTable(buildConfig);
     // **************
-    // Create Handlers
+    // CREATE SNS TOPIC
     // **************
-    this.createPostOrderHandler(buildConfig, orderApi, authorizer, orderDB);
+    const orderCreatedTopic = this.createOrderCreatedSNSTopic(buildConfig);
+    // **************
+    // CREATE LAMBDA HANDLERS
+    // **************
+    this.createPostOrderHandler(
+      buildConfig,
+      orderApi,
+      authorizer,
+      orderDB,
+      orderCreatedTopic
+    );
     this.createGetOrderHandler(buildConfig, orderApi, authorizer, orderDB);
+    this.createGetOrderByIdHandler(buildConfig, orderDB);
   }
   createOrderApiGateway(buildConfig: BuildConfig): apiGateway.HttpApi {
     const orderApi = new apiGateway.HttpApi(this, "HalAppOrderApi", {
@@ -58,7 +70,9 @@ export class HalappOrderStack extends cdk.Stack {
           apiGateway.CorsHttpMethod.PATCH,
         ],
         allowOrigins:
-          buildConfig.Environment === "PRODUCTION" ? ["halapp.io"] : ["*"],
+          buildConfig.Environment === "PRODUCTION"
+            ? ["https://halapp.io", "https://www.halapp.io"]
+            : ["*"],
       },
     });
     return orderApi;
@@ -149,11 +163,20 @@ export class HalappOrderStack extends cdk.Stack {
     }
     return orderTable;
   }
+
+  createOrderCreatedSNSTopic(buildConfig: BuildConfig): cdk.aws_sns.Topic {
+    const orderCreatedTopic = new sns.Topic(this, "OrderCreatedSNSTopic", {
+      displayName: buildConfig.SNSOrderCreatedTopic,
+      topicName: buildConfig.SNSOrderCreatedTopic,
+    });
+    return orderCreatedTopic;
+  }
   createPostOrderHandler(
     buildConfig: BuildConfig,
     orderApi: apiGateway.HttpApi,
     authorizer: apiGatewayAuthorizers.HttpUserPoolAuthorizer,
-    orderDB: cdk.aws_dynamodb.ITable
+    orderDB: cdk.aws_dynamodb.ITable,
+    orderCreatedTopic: cdk.aws_sns.Topic
   ): cdk.aws_lambda_nodejs.NodejsFunction {
     const postOrderCreateHandler = new NodejsFunction(
       this,
@@ -177,6 +200,7 @@ export class HalappOrderStack extends cdk.Stack {
           Region: buildConfig.Region,
           OrderDB: buildConfig.OrderDBName,
           OrganizationsUserExistsHandler: "OrganizationsUserExists",
+          SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
         },
       }
     );
@@ -197,6 +221,7 @@ export class HalappOrderStack extends cdk.Stack {
       })
     );
     orderDB.grantWriteData(postOrderCreateHandler);
+    orderCreatedTopic.grantPublish(postOrderCreateHandler);
     return postOrderCreateHandler;
   }
   createGetOrderHandler(
@@ -224,6 +249,7 @@ export class HalappOrderStack extends cdk.Stack {
         Region: buildConfig.Region,
         OrderDB: buildConfig.OrderDBName,
         OrganizationsUserExistsHandler: "OrganizationsUserExists",
+        SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
       },
     });
     orderApi.addRoutes({
@@ -244,5 +270,40 @@ export class HalappOrderStack extends cdk.Stack {
     );
     orderDB.grantReadData(getOrderHandler);
     return getOrderHandler;
+  }
+  createGetOrderByIdHandler(
+    buildConfig: BuildConfig,
+    orderDB: cdk.aws_dynamodb.ITable
+  ) {
+    const getOrderByIDHandler = new NodejsFunction(
+      this,
+      "OrderFetchByIdHandler",
+      {
+        memorySize: 1024,
+        runtime: lambda.Runtime.NODEJS_18_X,
+        functionName: "OrderFetchByIdHandler",
+        handler: "handler",
+        timeout: cdk.Duration.seconds(10),
+        entry: path.join(
+          __dirname,
+          `/../src/handlers/orders/get-by-id/index.ts`
+        ),
+        bundling: {
+          target: "es2020",
+          keepNames: true,
+          logLevel: LogLevel.INFO,
+          sourceMap: true,
+          minify: true,
+        },
+        environment: {
+          NODE_OPTIONS: "--enable-source-maps",
+          Region: buildConfig.Region,
+          OrderDB: buildConfig.OrderDBName,
+          SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
+        },
+      }
+    );
+    orderDB.grantReadData(getOrderByIDHandler);
+    return getOrderByIDHandler;
   }
 }

@@ -1,4 +1,4 @@
-AWSAccountID: "751021557844"
+AccountID: "751021557844"
 App: "HalappOrder"
 Environment: PRODUCTION
 Region: eu-central-1
@@ -8,3 +8,5 @@ OrderDBName: HalOrder
 
 UserPoolID: eu-central-1_a1Vy48gOr
 UserPoolClientID: 5g536qr72pjrt49saqb64jtedt
+
+SNSOrderCreatedTopic: ORDER_OrderCreatedTopic

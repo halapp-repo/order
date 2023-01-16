@@ -7,9 +7,12 @@ import OrganizationService from "../services/organization.service";
 import { OrderToOrderMetadataRepositoryMapper } from "../mappers/order-to-order-metadata-repository.mapper";
 import { OrderEventToOrderRepositoryDTOMapper } from "../mappers/order-event-to-order-repository.mapper";
 import { OrderToOrderViewModelMapper } from "../mappers/order-to-order-viewmodel.mapper";
+import { SNSStore } from "../repositories/sns-store";
+import { SNSService } from "../services/sns.service";
 
 container.registerSingleton<DynamoStore>("DBStore", DynamoStore);
 container.registerSingleton<LambdaStore>("LambdaStore", LambdaStore);
+container.registerSingleton<SNSStore>("SNSStore", SNSStore);
 
 container.register("OrderRepository", {
   useClass: OrderRepository,
@@ -28,6 +31,9 @@ container.register("OrderEventToOrderRepositoryDTOMapper", {
 });
 container.register("OrderToOrderViewModelMapper", {
   useClass: OrderToOrderViewModelMapper,
+});
+container.register("SNSService", {
+  useClass: SNSService,
 });
 
 export const diContainer = container;

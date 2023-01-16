@@ -1,16 +1,10 @@
 import createHttpError from "http-errors";
 import { Order } from "../models/order";
-import {
-  OrderItemViewModel,
-  OrderViewModel,
-} from "../models/viewmodels/order.viewmodel";
+import { OrderItemVM, OrderVM } from "@halapp/common";
 import { IMapper } from "./base.mapper";
 
-export class OrderToOrderViewModelMapper extends IMapper<
-  Order,
-  OrderViewModel
-> {
-  toDTO(arg: Order): OrderViewModel {
+export class OrderToOrderViewModelMapper extends IMapper<Order, OrderVM> {
+  toDTO(arg: Order): OrderVM {
     return {
       CreatedBy: arg.CreatedBy,
       DeliveryAddress: {
@@ -31,11 +25,11 @@ export class OrderToOrderViewModelMapper extends IMapper<
           Price: i.Price,
           ProductId: i.ProductId,
           Unit: i.Unit,
-        } as OrderItemViewModel;
+        } as OrderItemVM;
       }),
     };
   }
-  toModel(arg: OrderViewModel): Order {
+  toModel(arg: OrderVM): Order {
     throw new createHttpError.NotImplemented();
   }
 }

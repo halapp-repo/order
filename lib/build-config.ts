@@ -1,5 +1,5 @@
 export interface BuildConfig {
-  readonly AWSAccountID: string;
+  readonly AccountID: string;
   readonly App: string;
   readonly Environment: string;
   readonly Region: string;
@@ -9,4 +9,6 @@ export interface BuildConfig {
 
   readonly UserPoolID: string;
   readonly UserPoolClientID: string;
+
+  readonly SNSOrderCreatedTopic: string;
 }
