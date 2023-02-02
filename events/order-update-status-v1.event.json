@@ -1,0 +1,73 @@
+{
+    "version": "2.0",
+    "routeKey": "PUT /orders/{id}/status",
+    "rawPath": "/orders/a80fc423-0778-4af4-8667-5346d5a149f5/status",
+    "rawQueryString": "",
+    "headers": {
+        "accept": "application/json",
+        "accept-encoding": "gzip, deflate, br",
+        "accept-language": "en-US,en;q=0.9",
+        "authorization": "Bearer eyJraWQiOiJjY1pwcDlreEhQd0EwRVdGTXZRbXhTclwvc1JSUnVodUZvT01mNGx4NFczQT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJiNTY4NzRjZS0yMDNhLTQ5MTEtOTU4Zi0xNThiNWM4OTk3N2EiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiaXNzIjoiaHR0cHM6XC9cL2NvZ25pdG8taWRwLmV1LWNlbnRyYWwtMS5hbWF6b25hd3MuY29tXC9ldS1jZW50cmFsLTFfeEdWUDVQaHJhIiwiY29nbml0bzp1c2VybmFtZSI6ImI1Njg3NGNlLTIwM2EtNDkxMS05NThmLTE1OGI1Yzg5OTc3YSIsImN1c3RvbTpvcmdhbml6YXRpb25JZCI6IjI2OWUzMWRhLTQ0NGYtNDViNi1hZWRjLTU5ZjJjYzc0ZGM3OSIsIm9yaWdpbl9qdGkiOiJiOTJjZGU4Mi00ZjlhLTRjMDItYjRiNy04ZWRhMGJhYTI5MzEiLCJhdWQiOiI0ZnEwb2phNHY5ZmlyMm4zdWg4bXFiaTJoMCIsImV2ZW50X2lkIjoiYTljYjRjMGItNzQ3MC00M2IwLWJhY2ItNjJkZWUxZGFiOGM5IiwidG9rZW5fdXNlIjoiaWQiLCJhdXRoX3RpbWUiOjE2NzUxODU1NzEsImV4cCI6MTY3NTMyMDc3NywiaWF0IjoxNjc1MzE3MTc3LCJqdGkiOiI3MzUwYTIxYi0yOGUwLTQyMjQtYjU5ZS04ODUzYjRhMWIxNmQiLCJlbWFpbCI6IkZVUktBTi5PWkRFU0xJS0BHTUFJTC5DT00iLCJjdXN0b206aXNBZG1pbiI6InRydWUifQ.ACYPcmZlIQu87SDnqtY4ns2xa3ZuC2uh9hYEgsZyoXpQ3IodmlW75XjoYLPwv6GyOaVt42MGZsUXxVkeQ48_y9O2WGUCjGIGKUCw8FMDRs7SVQ7kNJL9nx9AaRz036ZNrrHHYtZ-HYFc1DzxN0mPJdPkvsNH9J_YlCXCMp0BTc-PCu0xTU8gJVukaU1xLsO8xl1qi8qJ5qydQUlCt9bUuuI4PP1ocv1sG6AnSyfnra2C971wKbXK_j3KR_wtRVfB41ZIY1sxwTn5BFfyXGpZPW7ktQK1drPzg4nzuVmi_7lYEiUfwJrVHG9jGZoYVZl_TdAs9spyyErr3uXFknMlBw",
+        "content-length": "21",
+        "content-type": "application/json",
+        "host": "51kinaqqj6.execute-api.eu-central-1.amazonaws.com",
+        "origin": "http://localhost:3000",
+        "referer": "http://localhost:3000/",
+        "sec-ch-ua": "\"Not_A Brand\";v=\"99\", \"Microsoft Edge\";v=\"109\", \"Chromium\";v=\"109\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\"",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "cross-site",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36 Edg/109.0.1518.70",
+        "x-amzn-trace-id": "Root=1-63db5049-6179a259141b6f381e6fa150",
+        "x-forwarded-for": "76.126.214.9",
+        "x-forwarded-port": "443",
+        "x-forwarded-proto": "https"
+    },
+    "requestContext": {
+        "accountId": "963662274920",
+        "apiId": "51kinaqqj6",
+        "authorizer": {
+            "jwt": {
+                "claims": {
+                    "aud": "4fq0oja4v9fir2n3uh8mqbi2h0",
+                    "auth_time": "1675185571",
+                    "cognito:username": "b56874ce-203a-4911-958f-158b5c89977a",
+                    "custom:isAdmin": "true",
+                    "custom:organizationId": "269e31da-444f-45b6-aedc-59f2cc74dc79",
+                    "email": "FURKAN.OZDESLIK@GMAIL.COM",
+                    "email_verified": "true",
+                    "event_id": "a9cb4c0b-7470-43b0-bacb-62dee1dab8c9",
+                    "exp": "1675320777",
+                    "iat": "1675317177",
+                    "iss": "https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_xGVP5Phra",
+                    "jti": "7350a21b-28e0-4224-b59e-8853b4a1b16d",
+                    "origin_jti": "b92cde82-4f9a-4c02-b4b7-8eda0baa2931",
+                    "sub": "b56874ce-203a-4911-958f-158b5c89977a",
+                    "token_use": "id"
+                },
+                "scopes": null
+            }
+        },
+        "domainName": "51kinaqqj6.execute-api.eu-central-1.amazonaws.com",
+        "domainPrefix": "51kinaqqj6",
+        "http": {
+            "method": "PUT",
+            "path": "/orders/a80fc423-0778-4af4-8667-5346d5a149f5/status",
+            "protocol": "HTTP/1.1",
+            "sourceIp": "76.126.214.9",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36 Edg/109.0.1518.70"
+        },
+        "requestId": "fsl7ljp6FiAEJYQ=",
+        "routeKey": "PUT /orders/{id}/status",
+        "stage": "$default",
+        "time": "02/Feb/2023:05:55:21 +0000",
+        "timeEpoch": 1675317321977
+    },
+    "pathParameters": {
+        "id": "a80fc423-0778-4af4-8667-5346d5a149f5"
+    },
+    "body": "{\"Status\":\"Canceled\"}",
+    "isBase64Encoded": false
+}

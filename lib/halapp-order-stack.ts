@@ -47,8 +47,14 @@ export class HalappOrderStack extends cdk.Stack {
       orderDB,
       orderCreatedTopic
     );
-    this.createGetOrderHandler(buildConfig, orderApi, authorizer, orderDB);
-    this.createGetOrderByIdHandler(buildConfig, orderDB);
+    this.createGetOrdersHandler(buildConfig, orderApi, authorizer, orderDB);
+    this.createGetOrderByIdHandler(buildConfig, orderApi, authorizer, orderDB);
+    this.createUpdateOrderStatusHandler(
+      buildConfig,
+      orderApi,
+      authorizer,
+      orderDB
+    );
   }
   createOrderApiGateway(buildConfig: BuildConfig): apiGateway.HttpApi {
     const orderApi = new apiGateway.HttpApi(this, "HalAppOrderApi", {
@@ -184,7 +190,7 @@ export class HalappOrderStack extends cdk.Stack {
       {
         memorySize: 1024,
         runtime: lambda.Runtime.NODEJS_18_X,
-        functionName: "OrderCreateHandler",
+        functionName: "Order-CreateHandler",
         handler: "handler",
         timeout: cdk.Duration.seconds(15),
         entry: path.join(__dirname, `/../src/handlers/orders/post/index.ts`),
@@ -224,7 +230,7 @@ export class HalappOrderStack extends cdk.Stack {
     orderCreatedTopic.grantPublish(postOrderCreateHandler);
     return postOrderCreateHandler;
   }
-  createGetOrderHandler(
+  createGetOrdersHandler(
     buildConfig: BuildConfig,
     orderApi: apiGateway.HttpApi,
     authorizer: apiGatewayAuthorizers.HttpUserPoolAuthorizer,
@@ -233,7 +239,7 @@ export class HalappOrderStack extends cdk.Stack {
     const getOrderHandler = new NodejsFunction(this, "OrderFetchHandler", {
       memorySize: 1024,
       runtime: lambda.Runtime.NODEJS_18_X,
-      functionName: "OrderFetchHandler",
+      functionName: "Order-FetchListHandler",
       handler: "handler",
       timeout: cdk.Duration.seconds(15),
       entry: path.join(__dirname, `/../src/handlers/orders/get/index.ts`),
@@ -273,20 +279,73 @@ export class HalappOrderStack extends cdk.Stack {
   }
   createGetOrderByIdHandler(
     buildConfig: BuildConfig,
+    orderApi: apiGateway.HttpApi,
+    authorizer: apiGatewayAuthorizers.HttpUserPoolAuthorizer,
     orderDB: cdk.aws_dynamodb.ITable
   ) {
-    const getOrderByIDHandler = new NodejsFunction(
+    const getOrderByIdHandler = new NodejsFunction(
       this,
       "OrderFetchByIdHandler",
       {
         memorySize: 1024,
         runtime: lambda.Runtime.NODEJS_18_X,
-        functionName: "OrderFetchByIdHandler",
+        functionName: "Order-FetchByIdHandler",
+        handler: "handler",
+        timeout: cdk.Duration.seconds(10),
+        entry: path.join(__dirname, `/../src/handlers/orders/get/id/index.ts`),
+        bundling: {
+          target: "es2020",
+          keepNames: true,
+          logLevel: LogLevel.INFO,
+          sourceMap: true,
+          minify: true,
+        },
+        environment: {
+          NODE_OPTIONS: "--enable-source-maps",
+          Region: buildConfig.Region,
+          OrderDB: buildConfig.OrderDBName,
+          OrganizationsUserExistsHandler: "OrganizationsUserExists",
+          SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
+        },
+      }
+    );
+    orderApi.addRoutes({
+      methods: [HttpMethod.GET],
+      integration: new apiGatewayIntegrations.HttpLambdaIntegration(
+        "getOrderByIdHandlerIntegration",
+        getOrderByIdHandler
+      ),
+      path: "/orders/{id}",
+      authorizer,
+    });
+    getOrderByIdHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["lambda:InvokeFunction"],
+        resources: ["*"],
+        effect: iam.Effect.ALLOW,
+      })
+    );
+    orderDB.grantReadData(getOrderByIdHandler);
+    return getOrderByIdHandler;
+  }
+  createUpdateOrderStatusHandler(
+    buildConfig: BuildConfig,
+    orderApi: apiGateway.HttpApi,
+    authorizer: apiGatewayAuthorizers.HttpUserPoolAuthorizer,
+    orderDB: cdk.aws_dynamodb.ITable
+  ) {
+    const updateOrderStatusHandler = new NodejsFunction(
+      this,
+      "OrderUpdateStatusHandler",
+      {
+        memorySize: 1024,
+        runtime: lambda.Runtime.NODEJS_18_X,
+        functionName: "Order-UpdateStatusHandler",
         handler: "handler",
         timeout: cdk.Duration.seconds(10),
         entry: path.join(
           __dirname,
-          `/../src/handlers/orders/get-by-id/index.ts`
+          `/../src/handlers/orders/put/id/status/index.ts`
         ),
         bundling: {
           target: "es2020",
@@ -299,11 +358,28 @@ export class HalappOrderStack extends cdk.Stack {
           NODE_OPTIONS: "--enable-source-maps",
           Region: buildConfig.Region,
           OrderDB: buildConfig.OrderDBName,
+          OrganizationsUserExistsHandler: "OrganizationsUserExists",
           SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
         },
       }
     );
-    orderDB.grantReadData(getOrderByIDHandler);
-    return getOrderByIDHandler;
+    orderApi.addRoutes({
+      methods: [HttpMethod.PUT],
+      integration: new apiGatewayIntegrations.HttpLambdaIntegration(
+        "updateOrderStatusHandlerIntegration",
+        updateOrderStatusHandler
+      ),
+      path: "/orders/{id}/status",
+      authorizer,
+    });
+    updateOrderStatusHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["lambda:InvokeFunction"],
+        resources: ["*"],
+        effect: iam.Effect.ALLOW,
+      })
+    );
+    orderDB.grantReadWriteData(updateOrderStatusHandler);
+    return updateOrderStatusHandler;
   }
 }

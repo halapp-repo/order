@@ -1,7 +1,6 @@
 import { Address } from "../address";
 import { OrderItem } from "../order";
-import { OrderEventType } from "../order-event-type.enum";
-import { OrderStatus } from "../order-status";
+import { OrderEventType, OrderStatusType } from "@halapp/common";
 
 interface OrderCreatedV1Payload {
   OrgID: string;
@@ -9,7 +8,8 @@ interface OrderCreatedV1Payload {
   CreatedBy: string;
   Note?: string;
   Items: OrderItem[];
-  Status: OrderStatus.Created;
+  Status: OrderStatusType.Created;
+  DeliveryTime: string;
 }
 
 type OrderCreatedV1Event = {

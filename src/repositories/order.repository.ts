@@ -12,7 +12,7 @@ import { OrderToOrderMetadataRepositoryMapper } from "../mappers/order-to-order-
 import { OrderEventRepositoryDTO } from "../models/dtos/order.event.repository.dto";
 import { getComparator } from "../utils/sort";
 import moment = require("moment");
-import { OrderStatus } from "../models/order-status";
+import { OrderStatusType } from "@halapp/common";
 
 @injectable()
 export default class OrderRepository {
@@ -77,11 +77,11 @@ export default class OrderRepository {
       })
     );
     const sortedEvents = listOfEvents.sort(getComparator("asc", "TS"));
-    const org = new Order();
+    const order = new Order();
     for (const event of sortedEvents) {
-      org.apply(event);
+      order.apply(event);
     }
-    return org;
+    return order;
   }
   async getIdsByOrgId(
     orgId: string,
@@ -112,7 +112,7 @@ export default class OrderRepository {
   }
 
   async getIdsByStatus(
-    status: OrderStatus,
+    status: OrderStatusType,
     orgId?: string
   ): Promise<string[] | undefined> {
     console.log("Fetching OrderIds By Status");

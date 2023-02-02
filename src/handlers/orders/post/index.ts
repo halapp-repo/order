@@ -66,6 +66,7 @@ const lambdaHandler = async function (
     note: event.body.Note,
     organizationId: event.body.OrganizationId,
     ts: event.body.TS,
+    deliveryTime: event.body.DeliveryTime,
   });
 
   return {

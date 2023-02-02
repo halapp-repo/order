@@ -1,9 +1,11 @@
 import { OrderEventRepositoryDTO } from "../models/dtos/order.event.repository.dto";
 import { OrderEvent } from "../models/events";
 import { OrderCreatedV1Payload } from "../models/events/order-created-v1.event";
-import { OrderEventType } from "../models/order-event-type.enum";
+import { OrderEventType } from "@halapp/common";
 import { trMoment } from "../utils/timezone";
 import { IMapper } from "./base.mapper";
+import { OrderCanceledV1Payload } from "../models/events/order-canceled-v1.event";
+import { OrderDeliveredV1Payload } from "../models/events/order-delivered-v1.event";
 
 export class OrderEventToOrderRepositoryDTOMapper extends IMapper<
   OrderEvent,
@@ -29,6 +31,22 @@ export class OrderEventToOrderRepositoryDTOMapper extends IMapper<
         EventType: eventType,
         ID: arg.OrderID,
         Payload: payload as OrderCreatedV1Payload,
+        TS: ts,
+        Type: "Event",
+      };
+    } else if (eventType === OrderEventType.OrderCanceledV1) {
+      return {
+        EventType: eventType,
+        ID: arg.OrderID,
+        Payload: payload as OrderCanceledV1Payload,
+        TS: ts,
+        Type: "Event",
+      };
+    } else if (eventType === OrderEventType.OrderDeliveredV1) {
+      return {
+        EventType: eventType,
+        ID: arg.OrderID,
+        Payload: payload as OrderDeliveredV1Payload,
         TS: ts,
         Type: "Event",
       };

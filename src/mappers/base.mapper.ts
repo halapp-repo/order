@@ -1,10 +1,10 @@
 export abstract class IMapper<TModal, TDto> {
-  abstract toDTO(arg: TModal): TDto;
-  toListDTO(arg: TModal[]): TDto[] {
-    return arg.map((a) => this.toDTO(a));
+  abstract toDTO(arg: TModal, ...params: any[]): TDto;
+  toListDTO(arg: TModal[], ...params: any[]): TDto[] {
+    return arg.map((a) => this.toDTO(a, ...params));
   }
-  abstract toModel(arg: TDto): TModal;
-  toListModel(arg: TDto[]): TModal[] {
-    return arg.map((a) => this.toModel(a));
+  abstract toModel(arg: TDto, ...params: any[]): TModal;
+  toListModel(arg: TDto[], ...params: any[]): TModal[] {
+    return arg.map((a) => this.toModel(a, ...params));
   }
 }
