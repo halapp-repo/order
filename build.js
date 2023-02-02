@@ -1,7 +1,7 @@
 const { build } = require("esbuild");
 
 build({
-  entryPoints: ["src/handlers/orders/post/index.ts"],
+  entryPoints: ["src/handlers/orders/put/id/status/index.ts"],
   outdir: "dist",
   bundle: true,
   minify: true,

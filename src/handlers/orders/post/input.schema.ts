@@ -5,6 +5,7 @@ const inputSchema = {
     OrganizationId: string().required(),
     Note: string().optional(),
     TS: string().required(),
+    DeliveryTime: string().required(),
     DeliveryAddress: object().shape({
       AddressLine: string().required(),
       County: string().required(),

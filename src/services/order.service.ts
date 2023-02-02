@@ -4,7 +4,7 @@ import { inject, injectable } from "tsyringe";
 import { OrderToOrderViewModelMapper } from "../mappers/order-to-order-viewmodel.mapper";
 import { Address } from "../models/address";
 import { Order, OrderItem } from "../models/order";
-import { OrderStatus } from "../models/order-status";
+import { OrderStatusType } from "@halapp/common";
 import OrderRepository from "../repositories/order.repository";
 import { notEmpty } from "../utils/array";
 import { trMoment } from "../utils/timezone";
@@ -27,6 +27,7 @@ export default class OrderService {
     organizationId,
     ts,
     note,
+    deliveryTime,
   }: {
     createdBy: string;
     deliveryAddress: Address;
@@ -34,6 +35,7 @@ export default class OrderService {
     organizationId: string;
     ts: string;
     note?: string;
+    deliveryTime: string;
   }): Promise<Order> {
     console.log("OrderService is calling");
     // Create Order
@@ -44,6 +46,7 @@ export default class OrderService {
       organizationId,
       ts,
       note,
+      deliveryTime,
     });
     // Save Order
     await this.repo.save(order);
@@ -62,7 +65,7 @@ export default class OrderService {
     orgId: string;
     fromDate?: moment.Moment;
     toDate?: moment.Moment;
-    status?: OrderStatus;
+    status?: OrderStatusType;
   }): Promise<Order[]> {
     if (!fromDate) {
       fromDate = trMoment("20230101", "YYYYMMDD");
@@ -93,6 +96,23 @@ export default class OrderService {
     if (!order) {
       throw createHttpError.InternalServerError();
     }
+    return order;
+  }
+  async updateStatus(
+    order: Order,
+    newStatus: OrderStatusType,
+    updateUserId: string
+  ): Promise<Order> {
+    console.log(
+      `Order Status is changing. From ${order.Status} To ${newStatus}`
+    );
+    if (newStatus === OrderStatusType.Canceled) {
+      order.cancel(updateUserId);
+    } else if (newStatus === OrderStatusType.Delivered) {
+      order.deliver(updateUserId);
+    }
+
+    await this.repo.save(order);
     return order;
   }
 }

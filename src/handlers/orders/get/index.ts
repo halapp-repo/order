@@ -16,6 +16,7 @@ import createHttpError from "http-errors";
 import OrderService from "../../../services/order.service";
 import OrganizationService from "../../../services/organization.service";
 import { OrderToOrderViewModelMapper } from "../../../mappers/order-to-order-viewmodel.mapper";
+import { trMoment } from "../../../utils/timezone";
 
 interface Event<TBody>
   extends Omit<
@@ -42,6 +43,8 @@ const lambdaHandler = async function (
   const currentUserId = event.requestContext.authorizer.jwt.claims[
     "sub"
   ] as string;
+  const fromDate = event.queryStringParameters.FromDate;
+  const toDate = event.queryStringParameters.ToDate;
 
   console.log(JSON.stringify(event.queryStringParameters));
   console.log(organizationId);
@@ -59,6 +62,8 @@ const lambdaHandler = async function (
 
   const orders = await orderService.getByOrganizationId({
     orgId: organizationId,
+    ...(fromDate ? { fromDate: trMoment(fromDate) } : null),
+    ...(toDate ? { toDate: trMoment(toDate) } : null),
   });
 
   return {

@@ -1,5 +1,3 @@
-import { OrderStatus } from "../order-status";
-
 class OrderEventRepositoryDTO {
   OrderID: string;
   TS?: string;

@@ -1,10 +1,10 @@
 import createHttpError from "http-errors";
 import { Order } from "../models/order";
-import { OrderItemVM, OrderVM } from "@halapp/common";
+import { OrderItemVM, OrderVM, OrderEventVM } from "@halapp/common";
 import { IMapper } from "./base.mapper";
 
 export class OrderToOrderViewModelMapper extends IMapper<Order, OrderVM> {
-  toDTO(arg: Order): OrderVM {
+  toDTO(arg: Order, includeEvents?: boolean): OrderVM {
     return {
       CreatedBy: arg.CreatedBy,
       DeliveryAddress: {
@@ -17,6 +17,7 @@ export class OrderToOrderViewModelMapper extends IMapper<Order, OrderVM> {
       Id: arg.Id,
       OrganizationId: arg.OrganizationId,
       CreatedDate: arg.CreatedDate.format(),
+      DeliveryTime: arg.DeliveryTime.format(),
       Status: arg.Status,
       Note: arg.Note,
       Items: arg.Items.map((i) => {
@@ -27,6 +28,18 @@ export class OrderToOrderViewModelMapper extends IMapper<Order, OrderVM> {
           Unit: i.Unit,
         } as OrderItemVM;
       }),
+      ...(includeEvents
+        ? {
+            Events: arg.RetroEvents.map(
+              (e) =>
+                ({
+                  EventType: e.EventType,
+                  Payload: JSON.stringify(e.Payload),
+                  TS: e.TS.format(),
+                } as OrderEventVM)
+            ),
+          }
+        : null),
     };
   }
   toModel(arg: OrderVM): Order {
