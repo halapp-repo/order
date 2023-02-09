@@ -43,6 +43,7 @@ const lambdaHandler = async function (
   const currentUserId = event.requestContext.authorizer.jwt.claims[
     "sub"
   ] as string;
+  const isAdmin = event.requestContext.authorizer.jwt.claims["custom:isAdmin"];
   const fromDate = event.queryStringParameters.FromDate;
   const toDate = event.queryStringParameters.ToDate;
 
@@ -56,7 +57,7 @@ const lambdaHandler = async function (
     organizationId,
     currentUserId
   );
-  if (!hasOrganizationUser) {
+  if (!isAdmin && !hasOrganizationUser) {
     throw createHttpError.Unauthorized();
   }
 

@@ -14,6 +14,9 @@ import { OrderCanceledV1Event } from "./events/order-canceled-v1.event";
 import { OrderCanceledState } from "./states/order-canceled.state";
 import { OrderDeliveredV1Event } from "./events/order-delivered-v1.event";
 import { OrderDeliveredState } from "./states/order-delivered.state";
+import { OrderPaidV1Event } from "./events/order-paid-v1.event";
+import { OrderPaidState } from "./states/order-paid.state";
+import { OrderItemsUpdatedV1Event } from "./events/order-updated-items-v1.event";
 
 class OrderItem {
   ProductId: string;
@@ -65,6 +68,11 @@ class Order extends EventSourceAggregate {
     } else if (event.EventType === OrderEventType.OrderDeliveredV1) {
       this.whenOrderDeliveredV1(event);
       return;
+    } else if (event.EventType === OrderEventType.OrderPaidV1) {
+      this.whenOrderPaidV1(event);
+      return;
+    } else if (event.EventType === OrderEventType.OrderItemsUpdatedV1) {
+      this.whenOrderItemsUpdatedV1(event);
     }
   }
 
@@ -131,6 +139,7 @@ class Order extends EventSourceAggregate {
     this.OrganizationId = OrgID;
     this.Status = Status;
     this.DeliveryAddress = plainToInstance(Address, DeliveryAddress);
+    //[TO-DO] get fresh amount from DB
     Items.forEach((i) => this.Items.push(plainToInstance(OrderItem, i)));
     this.CreatedBy = CreatedBy;
     this.Note = Note;
@@ -142,14 +151,23 @@ class Order extends EventSourceAggregate {
   whenOrderCanceledV1(event: OrderCanceledV1Event) {
     const { Status } = event.Payload;
     this.Status = Status;
-    // Set state
     this.setState(new OrderCanceledState(this));
   }
   whenOrderDeliveredV1(event: OrderDeliveredV1Event) {
     const { Status } = event.Payload;
     this.Status = Status;
-    // Set state
     this.setState(new OrderDeliveredState(this));
+  }
+  whenOrderPaidV1(event: OrderPaidV1Event) {
+    const { Status } = event.Payload;
+    this.Status = Status;
+    this.setState(new OrderPaidState(this));
+  }
+  whenOrderItemsUpdatedV1(event: OrderItemsUpdatedV1Event) {
+    const { DeletedItems } = event.Payload;
+    this.Items = this.Items.filter(
+      (i) => !DeletedItems.map((di) => di.ProductId).includes(i.ProductId)
+    );
   }
   cancel(canceledBy: string) {
     console.log("Order is canceling");
@@ -158,6 +176,22 @@ class Order extends EventSourceAggregate {
   deliver(deliveredBy: string) {
     console.log("Order is delivering");
     this.State.deliver(deliveredBy);
+  }
+  paid(paidBy: string) {
+    console.log("Order is paying");
+    this.State.paid(paidBy);
+  }
+  updateItems(currentItems: OrderItem[], updatedBy: string) {
+    console.log("Order Items are being updating");
+    // Only supports delete now
+    const deletedItems = this.Items.filter(
+      (x) => !currentItems.map((i) => i.ProductId).includes(x.ProductId)
+    );
+    this.State.updateItems(deletedItems, updatedBy);
+    //[TO-DO] add insert item
+    if (!currentItems || currentItems.length === 0) {
+      this.cancel(updatedBy);
+    }
   }
 }
 

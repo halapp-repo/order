@@ -8,12 +8,16 @@ class OrderCanceledException extends Error {
 
 class OrderCanceledState extends OrderState {
   cancel() {
-    throw new OrderCanceledException(
-      "Canceled order can not be canceled again"
-    );
+    throw new OrderCanceledException("Canceled order can not be canceled");
   }
   deliver(): void {
     throw new OrderCanceledException("Canceled order can not be delivered");
+  }
+  paid(): void {
+    throw new OrderCanceledException("Canceled order can not be paid");
+  }
+  updateItems(): void {
+    throw new OrderCanceledException("Canceled order can not be updated");
   }
 }
 

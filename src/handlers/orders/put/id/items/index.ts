@@ -12,12 +12,9 @@ import { OrderToOrderViewModelMapper } from "../../../../../mappers/order-to-ord
 import createHttpError from "http-errors";
 import httpErrorHandler from "@middy/http-error-handler";
 import httpResponseSerializer from "@middy/http-response-serializer";
-import cors from "@middy/http-cors";
-import OrganizationService from "../../../../../services/organization.service";
-import schemaValidatorMiddleware from "../../../../../middlewares/schema-validator.middleware";
-import { inputSchema, UpdateOrderStatusDTO } from "./input.schema";
-import { OrderStatusType } from "@halapp/common";
 import httpJsonBodyParser from "@middy/http-json-body-parser";
+import schemaValidatorMiddleware from "../../../../../middlewares/schema-validator.middleware";
+import { inputSchema, UpdateOrderItemsDTO } from "./input.schema";
 
 interface Event<TBody>
   extends Omit<APIGatewayProxyEventV2WithJWTAuthorizer, "body"> {
@@ -25,7 +22,7 @@ interface Event<TBody>
 }
 
 const lambdaHandler = async function (
-  event: Event<UpdateOrderStatusDTO>,
+  event: Event<UpdateOrderItemsDTO>,
   context: Context
 ): Promise<APIGatewayProxyResult> {
   // Print event
@@ -33,7 +30,6 @@ const lambdaHandler = async function (
   console.log(JSON.stringify(context, null, 2));
   // Resolve  dependencies
   const orderService = diContainer.resolve(OrderService);
-  const organizationService = diContainer.resolve(OrganizationService);
   const viewModelMapper = diContainer.resolve(OrderToOrderViewModelMapper);
   // Get paramaters from request
   const orderId = event.pathParameters?.id;
@@ -47,55 +43,21 @@ const lambdaHandler = async function (
     "custom:isAdmin"
   ] as boolean;
 
-  const status = event.body.Status;
-  // Authroize Step 1
-  if (!currentUserId) {
-    throw new createHttpError.Unauthorized();
-  }
   // Get order
   const order = await orderService.getById(orderId);
   // Authorize Step 2
-  const hasOrganizationUser = await organizationService.hasUser(
-    order.OrganizationId,
-    currentUserId
-  );
-  if (!isAdmin && !hasOrganizationUser) {
+  if (!isAdmin) {
     throw createHttpError.Unauthorized();
   }
-  // Authroize Step 3
-  authroizeByStatusType(status, isAdmin);
-  // Update status
-  const updatedOrder = await orderService.updateStatus(
-    order,
-    status,
-    currentUserId
-  );
+  await orderService.updateItems(order, event.body.Items, currentUserId);
+
   return {
     statusCode: 200,
-    body: JSON.stringify(viewModelMapper.toDTO(updatedOrder, true)),
+    body: JSON.stringify(viewModelMapper.toDTO(order, true)),
     headers: {
       "Content-Type": "application/json",
     },
   };
-};
-
-const authroizeByStatusType = (
-  status: OrderStatusType,
-  isAdmin: boolean
-): void => {
-  if (status === OrderStatusType.Canceled) {
-    return;
-  } else if (status === OrderStatusType.Delivered) {
-    if (isAdmin) {
-      return;
-    }
-    throw new createHttpError.Unauthorized();
-  } else if (status === OrderStatusType.Paid) {
-    if (isAdmin) {
-      return;
-    }
-    throw new createHttpError.Unauthorized();
-  }
 };
 
 const handler = middy(lambdaHandler)

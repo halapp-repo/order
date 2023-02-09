@@ -6,6 +6,8 @@ import { trMoment } from "../utils/timezone";
 import { IMapper } from "./base.mapper";
 import { OrderCanceledV1Payload } from "../models/events/order-canceled-v1.event";
 import { OrderDeliveredV1Payload } from "../models/events/order-delivered-v1.event";
+import { OrderPaidV1Payload } from "../models/events/order-paid-v1.event";
+import { OrderItemsUpdatedV1Payload } from "../models/events/order-updated-items-v1.event";
 
 export class OrderEventToOrderRepositoryDTOMapper extends IMapper<
   OrderEvent,
@@ -47,6 +49,22 @@ export class OrderEventToOrderRepositoryDTOMapper extends IMapper<
         EventType: eventType,
         ID: arg.OrderID,
         Payload: payload as OrderDeliveredV1Payload,
+        TS: ts,
+        Type: "Event",
+      };
+    } else if (eventType === OrderEventType.OrderPaidV1) {
+      return {
+        EventType: eventType,
+        ID: arg.OrderID,
+        Payload: payload as OrderPaidV1Payload,
+        TS: ts,
+        Type: "Event",
+      };
+    } else if (eventType === OrderEventType.OrderItemsUpdatedV1) {
+      return {
+        EventType: eventType,
+        ID: arg.OrderID,
+        Payload: payload as OrderItemsUpdatedV1Payload,
         TS: ts,
         Type: "Event",
       };

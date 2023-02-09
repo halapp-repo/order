@@ -55,6 +55,12 @@ export class HalappOrderStack extends cdk.Stack {
       authorizer,
       orderDB
     );
+    this.createUpdateOrderItemsHandler(
+      buildConfig,
+      orderApi,
+      authorizer,
+      orderDB
+    );
   }
   createOrderApiGateway(buildConfig: BuildConfig): apiGateway.HttpApi {
     const orderApi = new apiGateway.HttpApi(this, "HalAppOrderApi", {
@@ -381,5 +387,59 @@ export class HalappOrderStack extends cdk.Stack {
     );
     orderDB.grantReadWriteData(updateOrderStatusHandler);
     return updateOrderStatusHandler;
+  }
+  createUpdateOrderItemsHandler(
+    buildConfig: BuildConfig,
+    orderApi: apiGateway.HttpApi,
+    authorizer: apiGatewayAuthorizers.HttpUserPoolAuthorizer,
+    orderDB: cdk.aws_dynamodb.ITable
+  ) {
+    const updateOrderItemsHandler = new NodejsFunction(
+      this,
+      "OrderUpdateItemsHandler",
+      {
+        memorySize: 1024,
+        runtime: lambda.Runtime.NODEJS_18_X,
+        functionName: "Order-UpdateItemsHandler",
+        handler: "handler",
+        timeout: cdk.Duration.seconds(10),
+        entry: path.join(
+          __dirname,
+          `/../src/handlers/orders/put/id/items/index.ts`
+        ),
+        bundling: {
+          target: "es2020",
+          keepNames: true,
+          logLevel: LogLevel.INFO,
+          sourceMap: true,
+          minify: true,
+        },
+        environment: {
+          NODE_OPTIONS: "--enable-source-maps",
+          Region: buildConfig.Region,
+          OrderDB: buildConfig.OrderDBName,
+          OrganizationsUserExistsHandler: "OrganizationsUserExists",
+          SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
+        },
+      }
+    );
+    orderApi.addRoutes({
+      methods: [HttpMethod.PUT],
+      integration: new apiGatewayIntegrations.HttpLambdaIntegration(
+        "updateOrderItemsHandlerIntegration",
+        updateOrderItemsHandler
+      ),
+      path: "/orders/{id}/items",
+      authorizer,
+    });
+    updateOrderItemsHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["lambda:InvokeFunction"],
+        resources: ["*"],
+        effect: iam.Effect.ALLOW,
+      })
+    );
+    orderDB.grantReadWriteData(updateOrderItemsHandler);
+    return updateOrderItemsHandler;
   }
 }

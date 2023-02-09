@@ -110,8 +110,14 @@ export default class OrderService {
       order.cancel(updateUserId);
     } else if (newStatus === OrderStatusType.Delivered) {
       order.deliver(updateUserId);
+    } else if (newStatus === OrderStatusType.Paid) {
+      order.paid(updateUserId);
     }
-
+    await this.repo.save(order);
+    return order;
+  }
+  async updateItems(order: Order, newItems: OrderItem[], updateUserId: string) {
+    order.updateItems(newItems, updateUserId);
     await this.repo.save(order);
     return order;
   }
