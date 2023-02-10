@@ -4,11 +4,13 @@ import { inject, injectable } from "tsyringe";
 import { OrderToOrderViewModelMapper } from "../mappers/order-to-order-viewmodel.mapper";
 import { Address } from "../models/address";
 import { Order, OrderItem } from "../models/order";
-import { OrderStatusType } from "@halapp/common";
+import { CityType, OrderStatusType, ProductType } from "@halapp/common";
 import OrderRepository from "../repositories/order.repository";
 import { notEmpty } from "../utils/array";
 import { trMoment } from "../utils/timezone";
 import { SNSService } from "./sns.service";
+import ListingService from "./listing.service";
+import { OrderModelService } from "../models/services/order.model.service";
 
 @injectable()
 export default class OrderService {
@@ -18,7 +20,11 @@ export default class OrderService {
     @inject("SNSService")
     private snsService: SNSService,
     @inject("OrderToOrderViewModelMapper")
-    private viewModelMapper: OrderToOrderViewModelMapper
+    private viewModelMapper: OrderToOrderViewModelMapper,
+    @inject("ListingService")
+    private listingService: ListingService,
+    @inject("OrderModelService")
+    private orderModelService: OrderModelService
   ) {}
   async create({
     createdBy,
@@ -48,9 +54,17 @@ export default class OrderService {
       note,
       deliveryTime,
     });
+    const prices = await this.listingService.getActivePrices(
+      CityType.istanbul,
+      ProductType.produce
+    );
+    if (!this.orderModelService.doesOrderHaveValidPrices(order, prices)) {
+      throw createHttpError.BadRequest();
+    }
     // Save Order
     await this.repo.save(order);
     // Send Notification
+
     await this.snsService.publishOrderCreatedMessage({
       orderVM: this.viewModelMapper.toDTO(order),
     });

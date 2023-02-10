@@ -18,6 +18,7 @@ import { inputSchema, CreateOrderDTO } from "./input.schema";
 import OrganizationService from "../../../services/organization.service";
 import { OrderItem } from "../../../models/order";
 import { OrderToOrderViewModelMapper } from "../../../mappers/order-to-order-viewmodel.mapper";
+import ListingService from "../../../services/listing.service";
 
 interface Event<TBody>
   extends Omit<APIGatewayProxyEventV2WithJWTAuthorizer, "body"> {

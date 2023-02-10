@@ -212,6 +212,7 @@ export class HalappOrderStack extends cdk.Stack {
           Region: buildConfig.Region,
           OrderDB: buildConfig.OrderDBName,
           OrganizationsUserExistsHandler: "OrganizationsUserExists",
+          ListingPriceHandler: buildConfig.ListingPriceHandler,
           SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
         },
       }
