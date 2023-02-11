@@ -211,7 +211,7 @@ export class HalappOrderStack extends cdk.Stack {
           NODE_OPTIONS: "--enable-source-maps",
           Region: buildConfig.Region,
           OrderDB: buildConfig.OrderDBName,
-          OrganizationsUserExistsHandler: "OrganizationsUserExists",
+          GetOrganizationHandler: "Account-GetOrganizationHandler",
           ListingPriceHandler: buildConfig.ListingPriceHandler,
           SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
         },
@@ -261,7 +261,7 @@ export class HalappOrderStack extends cdk.Stack {
         NODE_OPTIONS: "--enable-source-maps",
         Region: buildConfig.Region,
         OrderDB: buildConfig.OrderDBName,
-        OrganizationsUserExistsHandler: "OrganizationsUserExists",
+        GetOrganizationHandler: "Account-GetOrganizationHandler",
         SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
       },
     });
@@ -311,7 +311,7 @@ export class HalappOrderStack extends cdk.Stack {
           NODE_OPTIONS: "--enable-source-maps",
           Region: buildConfig.Region,
           OrderDB: buildConfig.OrderDBName,
-          OrganizationsUserExistsHandler: "OrganizationsUserExists",
+          GetOrganizationHandler: "Account-GetOrganizationHandler",
           SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
         },
       }
@@ -365,7 +365,7 @@ export class HalappOrderStack extends cdk.Stack {
           NODE_OPTIONS: "--enable-source-maps",
           Region: buildConfig.Region,
           OrderDB: buildConfig.OrderDBName,
-          OrganizationsUserExistsHandler: "OrganizationsUserExists",
+          GetOrganizationHandler: "Account-GetOrganizationHandler",
           SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
         },
       }
@@ -419,7 +419,7 @@ export class HalappOrderStack extends cdk.Stack {
           NODE_OPTIONS: "--enable-source-maps",
           Region: buildConfig.Region,
           OrderDB: buildConfig.OrderDBName,
-          OrganizationsUserExistsHandler: "OrganizationsUserExists",
+          GetOrganizationHandler: "Account-GetOrganizationHandler",
           SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
         },
       }

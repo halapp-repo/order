@@ -1,5 +1,4 @@
 import { PriceVM } from "@halapp/common";
-import createHttpError from "http-errors";
 import { Order } from "../order";
 
 export class OrderModelService {

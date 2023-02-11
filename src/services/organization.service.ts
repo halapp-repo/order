@@ -1,6 +1,8 @@
 import { inject, injectable } from "tsyringe";
 import { InvokeCommand } from "@aws-sdk/client-lambda";
 import { LambdaStore } from "../repositories/lambda-store";
+import { plainToInstance } from "class-transformer";
+import { OrganizationVM } from "@halapp/common";
 
 @injectable()
 export default class OrganizationService {
@@ -12,9 +14,9 @@ export default class OrganizationService {
     const { Payload } = await this.lambdaStore.lambdaClient.send(
       new InvokeCommand({
         InvocationType: "RequestResponse",
-        FunctionName: process.env["OrganizationsUserExistsHandler"],
+        FunctionName: process.env["GetOrganizationHandler"],
         Payload: Buffer.from(
-          JSON.stringify({ OrganizationId: organizationId, UserId: userId }),
+          JSON.stringify({ OrganizationId: organizationId }),
           "utf-8"
         ),
       })
@@ -23,9 +25,15 @@ export default class OrganizationService {
       return false;
     }
     const result = JSON.parse(Buffer.from(Payload).toString());
-    console.log(result);
+    const organization = plainToInstance(
+      OrganizationVM,
+      JSON.parse(result.body)
+    );
 
-    console.log("Organization has user", result.body);
-    return result.body === "true";
+    console.log(
+      "Organization has user",
+      organization.JoinedUsers.includes(userId)
+    );
+    return organization.JoinedUsers.includes(userId);
   }
 }
