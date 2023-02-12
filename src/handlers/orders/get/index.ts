@@ -17,6 +17,7 @@ import OrderService from "../../../services/order.service";
 import OrganizationService from "../../../services/organization.service";
 import { OrderToOrderViewModelMapper } from "../../../mappers/order-to-order-viewmodel.mapper";
 import { trMoment } from "../../../utils/timezone";
+import { OrderStatusType } from "@halapp/common";
 
 interface Event<TBody>
   extends Omit<
@@ -46,9 +47,12 @@ const lambdaHandler = async function (
   const isAdmin = event.requestContext.authorizer.jwt.claims["custom:isAdmin"];
   const fromDate = event.queryStringParameters.FromDate;
   const toDate = event.queryStringParameters.ToDate;
+  const status: OrderStatusType | undefined =
+    event.queryStringParameters.Status;
 
   console.log(JSON.stringify(event.queryStringParameters));
-  console.log(organizationId);
+  console.log("Organization is ", organizationId);
+  console.log("Status is ", status);
 
   if (!currentUserId) {
     throw createHttpError.Unauthorized();
@@ -65,6 +69,7 @@ const lambdaHandler = async function (
     orgId: organizationId,
     ...(fromDate ? { fromDate: trMoment(fromDate) } : null),
     ...(toDate ? { toDate: trMoment(toDate) } : null),
+    ...(status ? { status: status } : null),
   });
 
   return {
