@@ -47,7 +47,12 @@ export class HalappOrderStack extends cdk.Stack {
       orderDB,
       orderCreatedTopic
     );
-    this.createGetOrdersHandler(buildConfig, orderApi, authorizer, orderDB);
+    this.createGetOrdersByOrganizationIdHandler(
+      buildConfig,
+      orderApi,
+      authorizer,
+      orderDB
+    );
     this.createGetOrderByIdHandler(buildConfig, orderApi, authorizer, orderDB);
     this.createUpdateOrderStatusHandler(
       buildConfig,
@@ -61,6 +66,7 @@ export class HalappOrderStack extends cdk.Stack {
       authorizer,
       orderDB
     );
+    this.createGetOrdersHandler(buildConfig, orderApi, authorizer, orderDB);
   }
   createOrderApiGateway(buildConfig: BuildConfig): apiGateway.HttpApi {
     const orderApi = new apiGateway.HttpApi(this, "HalAppOrderApi", {
@@ -237,38 +243,42 @@ export class HalappOrderStack extends cdk.Stack {
     orderCreatedTopic.grantPublish(postOrderCreateHandler);
     return postOrderCreateHandler;
   }
-  createGetOrdersHandler(
+  createGetOrdersByOrganizationIdHandler(
     buildConfig: BuildConfig,
     orderApi: apiGateway.HttpApi,
     authorizer: apiGatewayAuthorizers.HttpUserPoolAuthorizer,
     orderDB: cdk.aws_dynamodb.ITable
   ): cdk.aws_lambda_nodejs.NodejsFunction {
-    const getOrderHandler = new NodejsFunction(this, "OrderFetchHandler", {
-      memorySize: 1024,
-      runtime: lambda.Runtime.NODEJS_18_X,
-      functionName: "Order-FetchListHandler",
-      handler: "handler",
-      timeout: cdk.Duration.seconds(15),
-      entry: path.join(__dirname, `/../src/handlers/orders/get/index.ts`),
-      bundling: {
-        target: "es2020",
-        keepNames: true,
-        logLevel: LogLevel.INFO,
-        sourceMap: true,
-        minify: true,
-      },
-      environment: {
-        NODE_OPTIONS: "--enable-source-maps",
-        Region: buildConfig.Region,
-        OrderDB: buildConfig.OrderDBName,
-        GetOrganizationHandler: "Account-GetOrganizationHandler",
-        SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
-      },
-    });
+    const getOrderHandler = new NodejsFunction(
+      this,
+      "OrderFetchByOrganizationIdHandler",
+      {
+        memorySize: 1024,
+        runtime: lambda.Runtime.NODEJS_18_X,
+        functionName: "Order-FetchListByOrganizationIdHandler",
+        handler: "handler",
+        timeout: cdk.Duration.seconds(15),
+        entry: path.join(__dirname, `/../src/handlers/orders/get/index.ts`),
+        bundling: {
+          target: "es2020",
+          keepNames: true,
+          logLevel: LogLevel.INFO,
+          sourceMap: true,
+          minify: true,
+        },
+        environment: {
+          NODE_OPTIONS: "--enable-source-maps",
+          Region: buildConfig.Region,
+          OrderDB: buildConfig.OrderDBName,
+          GetOrganizationHandler: "Account-GetOrganizationHandler",
+          SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
+        },
+      }
+    );
     orderApi.addRoutes({
       methods: [HttpMethod.GET],
       integration: new apiGatewayIntegrations.HttpLambdaIntegration(
-        "getOrderHandlerIntegration",
+        "getOrdersByOrganizationIdHandlerIntegration",
         getOrderHandler
       ),
       path: "/orders",
@@ -442,5 +452,45 @@ export class HalappOrderStack extends cdk.Stack {
     );
     orderDB.grantReadWriteData(updateOrderItemsHandler);
     return updateOrderItemsHandler;
+  }
+  createGetOrdersHandler(
+    buildConfig: BuildConfig,
+    orderApi: apiGateway.HttpApi,
+    authorizer: apiGatewayAuthorizers.HttpUserPoolAuthorizer,
+    orderDB: cdk.aws_dynamodb.ITable
+  ) {
+    const getOrderHandler = new NodejsFunction(this, "OrderFetchAllHandler", {
+      memorySize: 1024,
+      runtime: lambda.Runtime.NODEJS_18_X,
+      functionName: "Order-FetchAllHandler",
+      handler: "handler",
+      timeout: cdk.Duration.seconds(15),
+      entry: path.join(__dirname, `/../src/handlers/admin/orders/get/index.ts`),
+      bundling: {
+        target: "es2020",
+        keepNames: true,
+        logLevel: LogLevel.INFO,
+        sourceMap: true,
+        minify: true,
+      },
+      environment: {
+        NODE_OPTIONS: "--enable-source-maps",
+        Region: buildConfig.Region,
+        OrderDB: buildConfig.OrderDBName,
+        GetOrganizationHandler: "Account-GetOrganizationHandler",
+        SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
+      },
+    });
+    orderApi.addRoutes({
+      methods: [HttpMethod.GET],
+      integration: new apiGatewayIntegrations.HttpLambdaIntegration(
+        "getAllOrdersHandlerIntegration",
+        getOrderHandler
+      ),
+      path: "/admin/orders",
+      authorizer,
+    });
+    orderDB.grantReadData(getOrderHandler);
+    return getOrderHandler;
   }
 }

@@ -70,7 +70,7 @@ export default class OrderService {
     });
     return order;
   }
-  async getByOrganizationId({
+  async getAllByOrganizationId({
     orgId,
     fromDate,
     toDate,
@@ -134,5 +134,44 @@ export default class OrderService {
     order.updateItems(newItems, updateUserId);
     await this.repo.save(order);
     return order;
+  }
+  async getAll({
+    fromDate,
+    toDate,
+    status,
+  }: {
+    fromDate?: moment.Moment;
+    toDate?: moment.Moment;
+    status?: OrderStatusType;
+  }): Promise<Order[]> {
+    console.log("getAll is called");
+    console.log(
+      JSON.stringify({
+        fromDate: fromDate,
+        toDate: toDate,
+        status: status,
+      })
+    );
+    if (!fromDate && !toDate && !status) {
+      throw createHttpError.BadRequest();
+    }
+    let orderIds;
+    if (fromDate && toDate) {
+      orderIds = await this.repo.getIdsByDate(fromDate, toDate);
+    } else {
+      orderIds = await this.repo.getIdsByStatus(status!);
+    }
+    const orderPromises: Promise<Order | null>[] = [];
+    for (const orderId of orderIds || []) {
+      orderPromises.push(this.repo.get(orderId));
+    }
+    const orders = await Promise.all(orderPromises);
+    return orders.filter(notEmpty).filter((o) => {
+      if (!status) {
+        return true;
+      } else {
+        return o.Status === status;
+      }
+    });
   }
 }
