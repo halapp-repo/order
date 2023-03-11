@@ -10,7 +10,9 @@ export default class OrganizationService {
     @inject("LambdaStore")
     private lambdaStore: LambdaStore
   ) {}
-  async hasUser(organizationId: string, userId: string): Promise<boolean> {
+  async getOrganization(
+    organizationId: string
+  ): Promise<OrganizationVM | undefined> {
     const { Payload } = await this.lambdaStore.lambdaClient.send(
       new InvokeCommand({
         InvocationType: "RequestResponse",
@@ -22,14 +24,16 @@ export default class OrganizationService {
       })
     );
     if (!Payload) {
-      return false;
+      return undefined;
     }
     const result = JSON.parse(Buffer.from(Payload).toString());
     const organization = plainToInstance(
       OrganizationVM,
       JSON.parse(result.body)
     );
-
+    return organization;
+  }
+  hasUser(organization: OrganizationVM, userId: string): boolean {
     console.log(
       "Organization has user",
       organization.JoinedUsers.includes(userId)

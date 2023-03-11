@@ -5,7 +5,7 @@ import { Address } from "./address";
 import EventSourceAggregate from "./event-source-aggregate";
 import { OrderEvent } from "./events";
 import { OrderCreatedV1Event } from "./events/order-created-v1.event";
-import { OrderEventType } from "@halapp/common";
+import { CityType, OrderEventType, PaymentMethodType } from "@halapp/common";
 import { OrderStatusType } from "@halapp/common";
 import { v4 as uuidv4 } from "uuid";
 import { OrderState } from "./states/order.state";
@@ -17,12 +17,20 @@ import { OrderDeliveredState } from "./states/order-delivered.state";
 import { OrderPaidV1Event } from "./events/order-paid-v1.event";
 import { OrderPaidState } from "./states/order-paid.state";
 import { OrderItemsUpdatedV1Event } from "./events/order-updated-items-v1.event";
+import { OrderPickedUpV1Event } from "./events/order-pickedup-v1.event";
+import { OrderPickUpState } from "./states/order-pickedup.state";
+import { OrderCompletedV1Event } from "./events/order-completed-v1.event";
+import { OrderCompletedState } from "./states/order-completed.state";
 
 class OrderItem {
   ProductId: string;
   Price: number;
   Count: number;
   Unit: string;
+
+  get TotalPrice(): number {
+    return this.Count * this.Price;
+  }
 }
 
 class Order extends EventSourceAggregate {
@@ -41,13 +49,13 @@ class Order extends EventSourceAggregate {
   CreatedBy: string;
 
   @Type(() => String)
-  @Transform(({ value }: { value: String }) => trMoment(value), {
+  @Transform(({ value }: { value: string }) => trMoment(value), {
     toClassOnly: true,
   })
   CreatedDate: moment.Moment;
 
   @Type(() => String)
-  @Transform(({ value }: { value: String }) => trMoment(value), {
+  @Transform(({ value }: { value: string }) => trMoment(value), {
     toClassOnly: true,
   })
   DeliveryTime: moment.Moment;
@@ -56,6 +64,17 @@ class Order extends EventSourceAggregate {
   Items: OrderItem[] = [];
 
   Note?: string;
+
+  City: CityType;
+  PaymentMethodType: PaymentMethodType;
+
+  get TotalPrice(): number {
+    let total = 0;
+    for (const item of this.Items) {
+      total += item.TotalPrice;
+    }
+    return total;
+  }
 
   apply(event: OrderEvent): void {
     this.RetroEvents.push(event);
@@ -73,6 +92,13 @@ class Order extends EventSourceAggregate {
       return;
     } else if (event.EventType === OrderEventType.OrderItemsUpdatedV1) {
       this.whenOrderItemsUpdatedV1(event);
+      return;
+    } else if (event.EventType === OrderEventType.OrderPickedUpV1) {
+      this.whenOrderPickedUpV1(event);
+      return;
+    } else if (event.EventType === OrderEventType.OrderCompletedV1) {
+      this.whenOrderCompletedV1(event);
+      return;
     }
   }
 
@@ -86,6 +112,8 @@ class Order extends EventSourceAggregate {
   }
 
   static create({
+    city,
+    paymentMethodType,
     organizationId,
     deliveryAddress,
     createdBy,
@@ -94,6 +122,8 @@ class Order extends EventSourceAggregate {
     items,
     deliveryTime,
   }: {
+    city: CityType;
+    paymentMethodType: PaymentMethodType;
     organizationId: string;
     deliveryAddress: Address;
     createdBy: string;
@@ -109,6 +139,8 @@ class Order extends EventSourceAggregate {
       EventType: OrderEventType.OrderCreatedV1,
       TS: orderTS,
       Payload: {
+        City: city,
+        PaymentMethodType: paymentMethodType,
         CreatedBy: createdBy,
         DeliveryAddress: deliveryAddress,
         Items: items,
@@ -122,9 +154,10 @@ class Order extends EventSourceAggregate {
     order.causes(event);
     return order;
   }
-
   whenOrderCreatedV1(event: OrderCreatedV1Event) {
     const {
+      City,
+      PaymentMethodType,
       CreatedBy,
       DeliveryAddress,
       Items,
@@ -145,6 +178,8 @@ class Order extends EventSourceAggregate {
     this.Note = Note;
     this.CreatedDate = TS;
     this.DeliveryTime = trMoment(DeliveryTime);
+    this.City = City;
+    this.PaymentMethodType = PaymentMethodType;
     // Set state
     this.setState(new OrderCreatedState(this));
   }
@@ -163,23 +198,41 @@ class Order extends EventSourceAggregate {
     this.Status = Status;
     this.setState(new OrderPaidState(this));
   }
+  whenOrderPickedUpV1(event: OrderPickedUpV1Event) {
+    const { Status } = event.Payload;
+    this.Status = Status;
+    this.setState(new OrderPickUpState(this));
+  }
   whenOrderItemsUpdatedV1(event: OrderItemsUpdatedV1Event) {
     const { DeletedItems } = event.Payload;
     this.Items = this.Items.filter(
       (i) => !DeletedItems.map((di) => di.ProductId).includes(i.ProductId)
     );
   }
+  whenOrderCompletedV1(event: OrderCompletedV1Event) {
+    const { Status } = event.Payload;
+    this.Status = Status;
+    this.setState(new OrderCompletedState(this));
+  }
   cancel(canceledBy: string) {
     console.log("Order is canceling");
     this.State.cancel(canceledBy);
+  }
+  pickUp(pickedUpBy: string) {
+    console.log("Order is picking up");
+    this.State.pickup(pickedUpBy);
   }
   deliver(deliveredBy: string) {
     console.log("Order is delivering");
     this.State.deliver(deliveredBy);
   }
-  paid(paidBy: string) {
+  pay(paidBy: string) {
     console.log("Order is paying");
-    this.State.paid(paidBy);
+    this.State.pay(paidBy);
+  }
+  complete(completedBy: string) {
+    console.log("Order is completing");
+    this.State.complete(completedBy);
   }
   updateItems(currentItems: OrderItem[], updatedBy: string) {
     console.log("Order Items are being updating");
@@ -192,6 +245,16 @@ class Order extends EventSourceAggregate {
     if (!currentItems || currentItems.length === 0) {
       this.cancel(updatedBy);
     }
+  }
+  isPaid(): boolean {
+    return this.RetroEvents.some(
+      (e) => e.EventType === OrderEventType.OrderPaidV1
+    );
+  }
+  isDelivered(): boolean {
+    return this.RetroEvents.some(
+      (e) => e.EventType === OrderEventType.OrderDeliveredV1
+    );
   }
 }
 

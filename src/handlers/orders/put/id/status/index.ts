@@ -12,7 +12,6 @@ import { OrderToOrderViewModelMapper } from "../../../../../mappers/order-to-ord
 import createHttpError from "http-errors";
 import httpErrorHandler from "@middy/http-error-handler";
 import httpResponseSerializer from "@middy/http-response-serializer";
-import cors from "@middy/http-cors";
 import OrganizationService from "../../../../../services/organization.service";
 import schemaValidatorMiddleware from "../../../../../middlewares/schema-validator.middleware";
 import { inputSchema, UpdateOrderStatusDTO } from "./input.schema";
@@ -55,8 +54,14 @@ const lambdaHandler = async function (
   // Get order
   const order = await orderService.getById(orderId);
   // Authorize Step 2
-  const hasOrganizationUser = await organizationService.hasUser(
-    order.OrganizationId,
+  const organization = await organizationService.getOrganization(
+    order.OrganizationId
+  );
+  if (!organization) {
+    throw createHttpError.BadRequest();
+  }
+  const hasOrganizationUser = organizationService.hasUser(
+    organization,
     currentUserId
   );
   if (!isAdmin && !hasOrganizationUser) {
@@ -83,18 +88,20 @@ const authroizeByStatusType = (
   status: OrderStatusType,
   isAdmin: boolean
 ): void => {
-  if (status === OrderStatusType.Canceled) {
-    return;
-  } else if (status === OrderStatusType.Delivered) {
-    if (isAdmin) {
-      return;
+  switch (status) {
+    case OrderStatusType.Canceled:
+      break;
+    case OrderStatusType.Completed:
+    case OrderStatusType.Paid:
+    case OrderStatusType.Created:
+      throw new createHttpError.Unauthorized();
+    case OrderStatusType.PickedUp:
+    case OrderStatusType.Delivered: {
+      if (!isAdmin) {
+        throw new createHttpError.Unauthorized();
+      }
+      break;
     }
-    throw new createHttpError.Unauthorized();
-  } else if (status === OrderStatusType.Paid) {
-    if (isAdmin) {
-      return;
-    }
-    throw new createHttpError.Unauthorized();
   }
 };
 

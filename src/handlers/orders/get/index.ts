@@ -57,8 +57,14 @@ const lambdaHandler = async function (
   if (!currentUserId) {
     throw createHttpError.Unauthorized();
   }
-  const hasOrganizationUser = await organizationService.hasUser(
-    organizationId,
+  const organization = await organizationService.getOrganization(
+    organizationId
+  );
+  if (!organization) {
+    throw createHttpError.BadRequest();
+  }
+  const hasOrganizationUser = organizationService.hasUser(
+    organization,
     currentUserId
   );
   if (!isAdmin && !hasOrganizationUser) {

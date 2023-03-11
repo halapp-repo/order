@@ -1,4 +1,4 @@
-import { PriceVM } from "@halapp/common";
+import { OrganizationVM, PaymentMethodType, PriceVM } from "@halapp/common";
 import { Order } from "../order";
 
 export class OrderModelService {
@@ -13,5 +13,11 @@ export class OrderModelService {
       }
       return price.Price === i.Price && price.Unit === i.Unit;
     });
+  }
+  doesOrderHaveEnoughCredit(order: Order, availableCredit: number): boolean {
+    if (order.PaymentMethodType === PaymentMethodType.card) {
+      return true;
+    }
+    return availableCredit >= order.TotalPrice;
   }
 }

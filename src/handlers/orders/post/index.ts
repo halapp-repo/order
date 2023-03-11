@@ -15,10 +15,9 @@ import { diContainer } from "../../../core/di-registry";
 import OrderService from "../../../services/order.service";
 import schemaValidatorMiddleware from "../../../middlewares/schema-validator.middleware";
 import { inputSchema, CreateOrderDTO } from "./input.schema";
-import OrganizationService from "../../../services/organization.service";
 import { OrderItem } from "../../../models/order";
 import { OrderToOrderViewModelMapper } from "../../../mappers/order-to-order-viewmodel.mapper";
-import ListingService from "../../../services/listing.service";
+import OrganizationService from "../../../services/organization.service";
 
 interface Event<TBody>
   extends Omit<APIGatewayProxyEventV2WithJWTAuthorizer, "body"> {
@@ -36,7 +35,6 @@ const lambdaHandler = async function (
   const organizationService = diContainer.resolve(OrganizationService);
   const viewModelMapper = diContainer.resolve(OrderToOrderViewModelMapper);
   // Get request paramaters
-  const organizationId = event.body.OrganizationId;
   const currentUserId = event.requestContext.authorizer.jwt.claims[
     "sub"
   ] as string;
@@ -44,8 +42,14 @@ const lambdaHandler = async function (
   if (!currentUserId) {
     throw createHttpError.Unauthorized();
   }
-  const hasOrganizationUser = await organizationService.hasUser(
-    organizationId,
+  const organization = await organizationService.getOrganization(
+    event.body.OrganizationId
+  );
+  if (!organization) {
+    throw createHttpError.BadRequest();
+  }
+  const hasOrganizationUser = organizationService.hasUser(
+    organization,
     currentUserId
   );
   if (!hasOrganizationUser) {
@@ -53,6 +57,8 @@ const lambdaHandler = async function (
   }
 
   const order = await orderService.create({
+    city: event.body.City,
+    paymentMethodType: event.body.PaymentMethodType,
     createdBy: currentUserId,
     deliveryAddress: event.body.DeliveryAddress,
     items: event.body.Items.map(
@@ -65,7 +71,7 @@ const lambdaHandler = async function (
         } as OrderItem)
     ),
     note: event.body.Note,
-    organizationId: event.body.OrganizationId,
+    organization: organization,
     ts: event.body.TS,
     deliveryTime: event.body.DeliveryTime,
   });

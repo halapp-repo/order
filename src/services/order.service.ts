@@ -4,13 +4,20 @@ import { inject, injectable } from "tsyringe";
 import { OrderToOrderViewModelMapper } from "../mappers/order-to-order-viewmodel.mapper";
 import { Address } from "../models/address";
 import { Order, OrderItem } from "../models/order";
-import { CityType, OrderStatusType, ProductType } from "@halapp/common";
+import {
+  CityType,
+  OrderStatusType,
+  OrganizationVM,
+  PaymentMethodType,
+  ProductType,
+} from "@halapp/common";
 import OrderRepository from "../repositories/order.repository";
 import { notEmpty } from "../utils/array";
 import { trMoment } from "../utils/timezone";
 import { SNSService } from "./sns.service";
 import ListingService from "./listing.service";
 import { OrderModelService } from "../models/services/order.model.service";
+import OrganizationService from "./organization.service";
 
 @injectable()
 export default class OrderService {
@@ -23,22 +30,28 @@ export default class OrderService {
     private viewModelMapper: OrderToOrderViewModelMapper,
     @inject("ListingService")
     private listingService: ListingService,
+    @inject("OrganizationService")
+    private organizationService: OrganizationService,
     @inject("OrderModelService")
     private orderModelService: OrderModelService
   ) {}
   async create({
+    city,
+    paymentMethodType,
     createdBy,
     deliveryAddress,
     items,
-    organizationId,
+    organization,
     ts,
     note,
     deliveryTime,
   }: {
+    city: CityType;
+    paymentMethodType: PaymentMethodType;
     createdBy: string;
     deliveryAddress: Address;
     items: OrderItem[];
-    organizationId: string;
+    organization: OrganizationVM;
     ts: string;
     note?: string;
     deliveryTime: string;
@@ -46,25 +59,39 @@ export default class OrderService {
     console.log("OrderService is calling");
     // Create Order
     const order = Order.create({
+      city,
+      paymentMethodType,
       createdBy,
       deliveryAddress,
       items,
-      organizationId,
+      organizationId: organization.ID,
       ts,
       note,
       deliveryTime,
     });
+
     const prices = await this.listingService.getActivePrices(
-      CityType.istanbul,
+      city,
       ProductType.produce
     );
-    if (!this.orderModelService.doesOrderHaveValidPrices(order, prices)) {
+    if (
+      !this.orderModelService.doesOrderHaveValidPrices(order, prices) ||
+      !this.orderModelService.doesOrderHaveEnoughCredit(
+        order,
+        organization.Balance + organization.CreditLimit
+      )
+    ) {
       throw createHttpError.BadRequest();
+    }
+    if (
+      paymentMethodType === PaymentMethodType.card ||
+      organization.Balance >= order.TotalPrice
+    ) {
+      order.pay(createdBy);
     }
     // Save Order
     await this.repo.save(order);
     // Send Notification
-
     await this.snsService.publishOrderCreatedMessage({
       orderVM: this.viewModelMapper.toDTO(order),
     });
@@ -122,10 +149,11 @@ export default class OrderService {
     );
     if (newStatus === OrderStatusType.Canceled) {
       order.cancel(updateUserId);
+      //SNS send cancel message
+    } else if (newStatus === OrderStatusType.PickedUp) {
+      order.pickUp(updateUserId);
     } else if (newStatus === OrderStatusType.Delivered) {
       order.deliver(updateUserId);
-    } else if (newStatus === OrderStatusType.Paid) {
-      order.paid(updateUserId);
     }
     await this.repo.save(order);
     return order;

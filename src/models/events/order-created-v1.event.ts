@@ -1,8 +1,15 @@
 import { Address } from "../address";
 import { OrderItem } from "../order";
-import { OrderEventType, OrderStatusType } from "@halapp/common";
+import {
+  CityType,
+  OrderEventType,
+  OrderStatusType,
+  PaymentMethodType,
+} from "@halapp/common";
 
 interface OrderCreatedV1Payload {
+  City: CityType;
+  PaymentMethodType: PaymentMethodType;
   OrgID: string;
   DeliveryAddress: Address;
   CreatedBy: string;

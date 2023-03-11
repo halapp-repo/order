@@ -13,11 +13,17 @@ class OrderCanceledState extends OrderState {
   deliver(): void {
     throw new OrderCanceledException("Canceled order can not be delivered");
   }
-  paid(): void {
+  pay(): void {
     throw new OrderCanceledException("Canceled order can not be paid");
   }
   updateItems(): void {
     throw new OrderCanceledException("Canceled order can not be updated");
+  }
+  pickup(pickedUp: string): void {
+    throw new OrderCanceledException("Canceled order can not be picked-up");
+  }
+  complete(completedBy: string): void {
+    throw new OrderCanceledException("Canceled order can not be completed");
   }
 }
 

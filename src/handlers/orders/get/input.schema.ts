@@ -1,5 +1,5 @@
 import { OrderStatusType } from "@halapp/common";
-import { object, string, number, InferType, array, mixed } from "yup";
+import { object, string, InferType, mixed } from "yup";
 
 const inputSchema = {
   queryStringParameters: object({

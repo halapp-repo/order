@@ -15,6 +15,7 @@ import httpResponseSerializer from "@middy/http-response-serializer";
 import httpJsonBodyParser from "@middy/http-json-body-parser";
 import schemaValidatorMiddleware from "../../../../../middlewares/schema-validator.middleware";
 import { inputSchema, UpdateOrderItemsDTO } from "./input.schema";
+import { OrderItem } from "../../../../../models/order";
 
 interface Event<TBody>
   extends Omit<APIGatewayProxyEventV2WithJWTAuthorizer, "body"> {
@@ -49,7 +50,19 @@ const lambdaHandler = async function (
   if (!isAdmin) {
     throw createHttpError.Unauthorized();
   }
-  await orderService.updateItems(order, event.body.Items, currentUserId);
+  await orderService.updateItems(
+    order,
+    event.body.Items.map(
+      (i) =>
+        ({
+          Count: i.Count,
+          Price: i.Price,
+          ProductId: i.ProductId,
+          Unit: i.Unit,
+        } as OrderItem)
+    ),
+    currentUserId
+  );
 
   return {
     statusCode: 200,

@@ -12,6 +12,8 @@ import { IMapper } from "./base.mapper";
 export class OrderToOrderViewModelMapper extends IMapper<Order, OrderVM> {
   toDTO(arg: Order, includeEvents?: boolean): OrderVM {
     return {
+      City: arg.City,
+      PaymentMethodType: arg.PaymentMethodType,
       CreatedBy: arg.CreatedBy,
       DeliveryAddress: {
         AddressLine: arg.DeliveryAddress.AddressLine,

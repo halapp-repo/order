@@ -28,48 +28,12 @@ export class OrderEventToOrderRepositoryDTOMapper extends IMapper<
       OrderEventType[arg.EventType as keyof typeof OrderEventType];
     const ts = trMoment(arg.TS);
     const payload = JSON.parse(arg.Payload);
-    if (eventType === OrderEventType.OrderCreatedV1) {
-      return {
-        EventType: eventType,
-        ID: arg.OrderID,
-        Payload: payload as OrderCreatedV1Payload,
-        TS: ts,
-        Type: "Event",
-      };
-    } else if (eventType === OrderEventType.OrderCanceledV1) {
-      return {
-        EventType: eventType,
-        ID: arg.OrderID,
-        Payload: payload as OrderCanceledV1Payload,
-        TS: ts,
-        Type: "Event",
-      };
-    } else if (eventType === OrderEventType.OrderDeliveredV1) {
-      return {
-        EventType: eventType,
-        ID: arg.OrderID,
-        Payload: payload as OrderDeliveredV1Payload,
-        TS: ts,
-        Type: "Event",
-      };
-    } else if (eventType === OrderEventType.OrderPaidV1) {
-      return {
-        EventType: eventType,
-        ID: arg.OrderID,
-        Payload: payload as OrderPaidV1Payload,
-        TS: ts,
-        Type: "Event",
-      };
-    } else if (eventType === OrderEventType.OrderItemsUpdatedV1) {
-      return {
-        EventType: eventType,
-        ID: arg.OrderID,
-        Payload: payload as OrderItemsUpdatedV1Payload,
-        TS: ts,
-        Type: "Event",
-      };
-    } else {
-      throw new Error("Unsupported type");
-    }
+    return {
+      EventType: eventType,
+      ID: arg.OrderID,
+      Payload: payload,
+      TS: ts,
+      Type: "Event",
+    };
   }
 }

@@ -42,8 +42,14 @@ const lambdaHandler = async function (
   // Get order
   const order = await orderService.getById(orderId);
   // Authorize Step 2
-  const hasOrganizationUser = await organizationService.hasUser(
-    order.OrganizationId,
+  const organization = await organizationService.getOrganization(
+    order.OrganizationId
+  );
+  if (!organization) {
+    throw createHttpError.BadRequest();
+  }
+  const hasOrganizationUser = organizationService.hasUser(
+    organization,
     currentUserId
   );
   if (!isAdmin && !hasOrganizationUser) {
