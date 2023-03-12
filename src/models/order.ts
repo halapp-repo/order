@@ -2,10 +2,14 @@ import { Exclude, plainToInstance, Transform, Type } from "class-transformer";
 import moment from "moment";
 import { trMoment } from "../utils/timezone";
 import { Address } from "./address";
-import EventSourceAggregate from "./event-source-aggregate";
 import { OrderEvent } from "./events";
 import { OrderCreatedV1Event } from "./events/order-created-v1.event";
-import { CityType, OrderEventType, PaymentMethodType } from "@halapp/common";
+import {
+  CityType,
+  EventSourceAggregate,
+  OrderEventType,
+  PaymentMethodType,
+} from "@halapp/common";
 import { OrderStatusType } from "@halapp/common";
 import { v4 as uuidv4 } from "uuid";
 import { OrderState } from "./states/order.state";
@@ -33,7 +37,7 @@ class OrderItem {
   }
 }
 
-class Order extends EventSourceAggregate {
+class Order extends EventSourceAggregate<OrderEvent> {
   @Exclude()
   State: OrderState;
 
