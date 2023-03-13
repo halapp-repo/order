@@ -58,7 +58,8 @@ export class HalappOrderStack extends cdk.Stack {
       buildConfig,
       orderApi,
       authorizer,
-      orderDB
+      orderDB,
+      orderCreatedTopic
     );
     this.createUpdateOrderItemsHandler(
       buildConfig,
@@ -183,9 +184,9 @@ export class HalappOrderStack extends cdk.Stack {
   }
 
   createOrderCreatedSNSTopic(buildConfig: BuildConfig): cdk.aws_sns.Topic {
-    const orderCreatedTopic = new sns.Topic(this, "OrderCreatedSNSTopic", {
-      displayName: buildConfig.SNSOrderCreatedTopic,
-      topicName: buildConfig.SNSOrderCreatedTopic,
+    const orderCreatedTopic = new sns.Topic(this, "OrderSNSTopic", {
+      displayName: buildConfig.SNSOrderTopic,
+      topicName: buildConfig.SNSOrderTopic,
     });
     return orderCreatedTopic;
   }
@@ -219,7 +220,7 @@ export class HalappOrderStack extends cdk.Stack {
           OrderDB: buildConfig.OrderDBName,
           GetOrganizationHandler: "Account-GetOrganizationHandler",
           ListingPriceHandler: buildConfig.ListingPriceHandler,
-          SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
+          SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderTopic}`,
         },
       }
     );
@@ -271,7 +272,7 @@ export class HalappOrderStack extends cdk.Stack {
           Region: buildConfig.Region,
           OrderDB: buildConfig.OrderDBName,
           GetOrganizationHandler: "Account-GetOrganizationHandler",
-          SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
+          SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderTopic}`,
         },
       }
     );
@@ -322,7 +323,7 @@ export class HalappOrderStack extends cdk.Stack {
           Region: buildConfig.Region,
           OrderDB: buildConfig.OrderDBName,
           GetOrganizationHandler: "Account-GetOrganizationHandler",
-          SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
+          SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderTopic}`,
         },
       }
     );
@@ -349,7 +350,8 @@ export class HalappOrderStack extends cdk.Stack {
     buildConfig: BuildConfig,
     orderApi: apiGateway.HttpApi,
     authorizer: apiGatewayAuthorizers.HttpUserPoolAuthorizer,
-    orderDB: cdk.aws_dynamodb.ITable
+    orderDB: cdk.aws_dynamodb.ITable,
+    orderTopic: cdk.aws_sns.Topic
   ) {
     const updateOrderStatusHandler = new NodejsFunction(
       this,
@@ -376,7 +378,7 @@ export class HalappOrderStack extends cdk.Stack {
           Region: buildConfig.Region,
           OrderDB: buildConfig.OrderDBName,
           GetOrganizationHandler: "Account-GetOrganizationHandler",
-          SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
+          SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderTopic}`,
         },
       }
     );
@@ -397,6 +399,7 @@ export class HalappOrderStack extends cdk.Stack {
       })
     );
     orderDB.grantReadWriteData(updateOrderStatusHandler);
+    orderTopic.grantPublish(updateOrderStatusHandler);
     return updateOrderStatusHandler;
   }
   createUpdateOrderItemsHandler(
@@ -430,7 +433,7 @@ export class HalappOrderStack extends cdk.Stack {
           Region: buildConfig.Region,
           OrderDB: buildConfig.OrderDBName,
           GetOrganizationHandler: "Account-GetOrganizationHandler",
-          SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
+          SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderTopic}`,
         },
       }
     );
@@ -478,7 +481,7 @@ export class HalappOrderStack extends cdk.Stack {
         Region: buildConfig.Region,
         OrderDB: buildConfig.OrderDBName,
         GetOrganizationHandler: "Account-GetOrganizationHandler",
-        SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderCreatedTopic}`,
+        SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderTopic}`,
       },
     });
     orderApi.addRoutes({

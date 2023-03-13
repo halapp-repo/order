@@ -9,4 +9,4 @@ OrderDBName: HalOrder
 UserPoolID: eu-central-1_xGVP5Phra
 UserPoolClientID: 4fq0oja4v9fir2n3uh8mqbi2h0
 
-SNSOrderCreatedTopic: ORDER_OrderCreatedTopic
+SNSOrderTopic: ORDER_OrderTopic

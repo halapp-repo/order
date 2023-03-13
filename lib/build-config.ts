@@ -10,7 +10,7 @@ export interface BuildConfig {
   readonly UserPoolID: string;
   readonly UserPoolClientID: string;
 
-  readonly SNSOrderCreatedTopic: string;
+  readonly SNSOrderTopic: string;
 
   readonly ListingPriceHandler: "Listing-GetPricesHandler";
 }

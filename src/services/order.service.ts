@@ -93,7 +93,7 @@ export default class OrderService {
     await this.repo.save(order);
     // Send Notification
     await this.snsService.publishOrderCreatedMessage({
-      orderVM: this.viewModelMapper.toDTO(order),
+      order: order,
     });
     return order;
   }
@@ -149,7 +149,7 @@ export default class OrderService {
     );
     if (newStatus === OrderStatusType.Canceled) {
       order.cancel(updateUserId);
-      //SNS send cancel message
+      await this.snsService.publishOrderCanceledMessage({ order });
     } else if (newStatus === OrderStatusType.PickedUp) {
       order.pickUp(updateUserId);
     } else if (newStatus === OrderStatusType.Delivered) {
