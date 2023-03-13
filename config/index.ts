@@ -36,7 +36,7 @@ function getConfig(app: cdk.App): BuildConfig {
 
     UserPoolID: ensureString(unparsedEnv, "UserPoolID"),
     UserPoolClientID: ensureString(unparsedEnv, "UserPoolClientID"),
-    SNSOrderCreatedTopic: ensureString(unparsedEnv, "SNSOrderCreatedTopic"),
+    SNSOrderTopic: ensureString(unparsedEnv, "SNSOrderTopic"),
 
     ListingPriceHandler: "Listing-GetPricesHandler",
   };
