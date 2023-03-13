@@ -1,11 +1,19 @@
 import createHttpError from "http-errors";
 import { Order } from "../models/order";
-import { OrderItemVM, OrderVM, OrderEventVM } from "@halapp/common";
+import {
+  OrderItemVM,
+  OrderVM,
+  OrderEventVM,
+  OrderEventType,
+  OrderItemsUpdatedV1PayloadVM,
+} from "@halapp/common";
 import { IMapper } from "./base.mapper";
 
 export class OrderToOrderViewModelMapper extends IMapper<Order, OrderVM> {
   toDTO(arg: Order, includeEvents?: boolean): OrderVM {
     return {
+      City: arg.City,
+      PaymentMethodType: arg.PaymentMethodType,
       CreatedBy: arg.CreatedBy,
       DeliveryAddress: {
         AddressLine: arg.DeliveryAddress.AddressLine,
@@ -30,14 +38,26 @@ export class OrderToOrderViewModelMapper extends IMapper<Order, OrderVM> {
       }),
       ...(includeEvents
         ? {
-            Events: arg.RetroEvents.map(
-              (e) =>
-                ({
-                  EventType: e.EventType,
-                  Payload: JSON.stringify(e.Payload),
-                  TS: e.TS.format(),
-                } as OrderEventVM)
-            ),
+            Events: arg.RetroEvents.map((e) => {
+              switch (e.EventType) {
+                case OrderEventType.OrderItemsUpdatedV1: {
+                  return {
+                    EventType: e.EventType,
+                    Payload: JSON.stringify({
+                      UpdatedBy: e.Payload.UpdatedBy,
+                      DeletedItems: e.Payload.DeletedItems,
+                    } as OrderItemsUpdatedV1PayloadVM),
+                    TS: e.TS.format(),
+                  } as OrderEventVM;
+                }
+                default:
+                  return {
+                    EventType: e.EventType,
+                    Payload: JSON.stringify(e.Payload),
+                    TS: e.TS.format(),
+                  } as OrderEventVM;
+              }
+            }),
           }
         : null),
     };

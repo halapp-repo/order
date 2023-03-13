@@ -9,14 +9,13 @@ import {
   APIGatewayProxyResult,
   APIGatewayProxyEventV2WithJWTAuthorizer,
 } from "aws-lambda";
-import schemaValidatorMiddleware from "../../../middlewares/schema-validator.middleware";
-import { ByOrgDTO, inputSchema } from "./input.schema";
-import { diContainer } from "../../../core/di-registry";
+import schemaValidatorMiddleware from "../../../../middlewares/schema-validator.middleware";
+import { AllOrdersDTO, inputSchema } from "./input.schema";
+import { diContainer } from "../../../../core/di-registry";
 import createHttpError from "http-errors";
-import OrderService from "../../../services/order.service";
-import OrganizationService from "../../../services/organization.service";
-import { OrderToOrderViewModelMapper } from "../../../mappers/order-to-order-viewmodel.mapper";
-import { trMoment } from "../../../utils/timezone";
+import OrderService from "../../../../services/order.service";
+import { OrderToOrderViewModelMapper } from "../../../../mappers/order-to-order-viewmodel.mapper";
+import { trMoment } from "../../../../utils/timezone";
 import { OrderStatusType } from "@halapp/common";
 
 interface Event<TBody>
@@ -28,7 +27,7 @@ interface Event<TBody>
 }
 
 const lambdaHandler = async function (
-  event: Event<ByOrgDTO>,
+  event: Event<AllOrdersDTO>,
   context: Context
 ): Promise<APIGatewayProxyResult> {
   console.log(JSON.stringify(event, null, 2));
@@ -36,11 +35,9 @@ const lambdaHandler = async function (
 
   // Resolve dependecies
   const orderService = diContainer.resolve(OrderService);
-  const organizationService = diContainer.resolve(OrganizationService);
   const viewModelMapper = diContainer.resolve(OrderToOrderViewModelMapper);
 
   // Get request paramaters
-  const organizationId = event.queryStringParameters.OrganizationId;
   const currentUserId = event.requestContext.authorizer.jwt.claims[
     "sub"
   ] as string;
@@ -51,28 +48,13 @@ const lambdaHandler = async function (
     event.queryStringParameters.Status;
 
   console.log(JSON.stringify(event.queryStringParameters));
-  console.log("Organization is ", organizationId);
   console.log("Status is ", status);
 
-  if (!currentUserId) {
-    throw createHttpError.Unauthorized();
-  }
-  const organization = await organizationService.getOrganization(
-    organizationId
-  );
-  if (!organization) {
-    throw createHttpError.BadRequest();
-  }
-  const hasOrganizationUser = organizationService.hasUser(
-    organization,
-    currentUserId
-  );
-  if (!isAdmin && !hasOrganizationUser) {
+  if (!currentUserId || !isAdmin) {
     throw createHttpError.Unauthorized();
   }
 
-  const orders = await orderService.getAllByOrganizationId({
-    orgId: organizationId,
+  const orders = await orderService.getAll({
     ...(fromDate ? { fromDate: trMoment(fromDate) } : null),
     ...(toDate ? { toDate: trMoment(toDate) } : null),
     ...(status ? { status: status } : null),

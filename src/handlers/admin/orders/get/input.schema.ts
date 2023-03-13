@@ -3,7 +3,6 @@ import { object, string, InferType, mixed } from "yup";
 
 const inputSchema = {
   queryStringParameters: object({
-    OrganizationId: string().required(),
     FromDate: string().optional(),
     ToDate: string().optional(),
     Status: mixed<OrderStatusType>()
@@ -12,7 +11,7 @@ const inputSchema = {
   }),
 };
 
-type ByOrgDTO = InferType<typeof inputSchema.queryStringParameters>;
+type AllOrdersDTO = InferType<typeof inputSchema.queryStringParameters>;
 
 export { inputSchema };
-export type { ByOrgDTO };
+export type { AllOrdersDTO };

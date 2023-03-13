@@ -4,11 +4,20 @@ import { inject, injectable } from "tsyringe";
 import { OrderToOrderViewModelMapper } from "../mappers/order-to-order-viewmodel.mapper";
 import { Address } from "../models/address";
 import { Order, OrderItem } from "../models/order";
-import { OrderStatusType } from "@halapp/common";
+import {
+  CityType,
+  OrderStatusType,
+  OrganizationVM,
+  PaymentMethodType,
+  ProductType,
+} from "@halapp/common";
 import OrderRepository from "../repositories/order.repository";
 import { notEmpty } from "../utils/array";
 import { trMoment } from "../utils/timezone";
 import { SNSService } from "./sns.service";
+import ListingService from "./listing.service";
+import { OrderModelService } from "../models/services/order.model.service";
+import OrganizationService from "./organization.service";
 
 @injectable()
 export default class OrderService {
@@ -18,21 +27,31 @@ export default class OrderService {
     @inject("SNSService")
     private snsService: SNSService,
     @inject("OrderToOrderViewModelMapper")
-    private viewModelMapper: OrderToOrderViewModelMapper
+    private viewModelMapper: OrderToOrderViewModelMapper,
+    @inject("ListingService")
+    private listingService: ListingService,
+    @inject("OrganizationService")
+    private organizationService: OrganizationService,
+    @inject("OrderModelService")
+    private orderModelService: OrderModelService
   ) {}
   async create({
+    city,
+    paymentMethodType,
     createdBy,
     deliveryAddress,
     items,
-    organizationId,
+    organization,
     ts,
     note,
     deliveryTime,
   }: {
+    city: CityType;
+    paymentMethodType: PaymentMethodType;
     createdBy: string;
     deliveryAddress: Address;
     items: OrderItem[];
-    organizationId: string;
+    organization: OrganizationVM;
     ts: string;
     note?: string;
     deliveryTime: string;
@@ -40,14 +59,36 @@ export default class OrderService {
     console.log("OrderService is calling");
     // Create Order
     const order = Order.create({
+      city,
+      paymentMethodType,
       createdBy,
       deliveryAddress,
       items,
-      organizationId,
+      organizationId: organization.ID,
       ts,
       note,
       deliveryTime,
     });
+
+    const prices = await this.listingService.getActivePrices(
+      city,
+      ProductType.produce
+    );
+    if (
+      !this.orderModelService.doesOrderHaveValidPrices(order, prices) ||
+      !this.orderModelService.doesOrderHaveEnoughCredit(
+        order,
+        organization.Balance + organization.CreditLimit
+      )
+    ) {
+      throw createHttpError.BadRequest();
+    }
+    if (
+      paymentMethodType === PaymentMethodType.card ||
+      organization.Balance >= order.TotalPrice
+    ) {
+      order.pay(createdBy);
+    }
     // Save Order
     await this.repo.save(order);
     // Send Notification
@@ -56,7 +97,7 @@ export default class OrderService {
     });
     return order;
   }
-  async getByOrganizationId({
+  async getAllByOrganizationId({
     orgId,
     fromDate,
     toDate,
@@ -108,11 +149,57 @@ export default class OrderService {
     );
     if (newStatus === OrderStatusType.Canceled) {
       order.cancel(updateUserId);
+      //SNS send cancel message
+    } else if (newStatus === OrderStatusType.PickedUp) {
+      order.pickUp(updateUserId);
     } else if (newStatus === OrderStatusType.Delivered) {
       order.deliver(updateUserId);
     }
-
     await this.repo.save(order);
     return order;
+  }
+  async updateItems(order: Order, newItems: OrderItem[], updateUserId: string) {
+    order.updateItems(newItems, updateUserId);
+    await this.repo.save(order);
+    return order;
+  }
+  async getAll({
+    fromDate,
+    toDate,
+    status,
+  }: {
+    fromDate?: moment.Moment;
+    toDate?: moment.Moment;
+    status?: OrderStatusType;
+  }): Promise<Order[]> {
+    console.log("getAll is called");
+    console.log(
+      JSON.stringify({
+        fromDate: fromDate,
+        toDate: toDate,
+        status: status,
+      })
+    );
+    if (!fromDate && !toDate && !status) {
+      throw createHttpError.BadRequest();
+    }
+    let orderIds;
+    if (fromDate && toDate) {
+      orderIds = await this.repo.getIdsByDate(fromDate, toDate);
+    } else {
+      orderIds = await this.repo.getIdsByStatus(status!);
+    }
+    const orderPromises: Promise<Order | null>[] = [];
+    for (const orderId of orderIds || []) {
+      orderPromises.push(this.repo.get(orderId));
+    }
+    const orders = await Promise.all(orderPromises);
+    return orders.filter(notEmpty).filter((o) => {
+      if (!status) {
+        return true;
+      } else {
+        return o.Status === status;
+      }
+    });
   }
 }

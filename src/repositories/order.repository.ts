@@ -1,9 +1,5 @@
 import { inject, injectable } from "tsyringe";
-import {
-  BatchGetCommand,
-  BatchWriteCommand,
-  QueryCommand,
-} from "@aws-sdk/lib-dynamodb";
+import { BatchWriteCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { DynamoStore } from "./dynamo-store";
 import createHttpError = require("http-errors");
 import { Order } from "../models/order";
@@ -110,7 +106,6 @@ export default class OrderRepository {
       return orderId;
     });
   }
-
   async getIdsByStatus(
     status: OrderStatusType,
     orgId?: string
@@ -151,7 +146,6 @@ export default class OrderRepository {
       return orderId;
     });
   }
-
   async getIdsByDate(
     fromDate: moment.Moment,
     toDate: moment.Moment

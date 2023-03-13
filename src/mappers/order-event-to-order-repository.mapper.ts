@@ -6,6 +6,8 @@ import { trMoment } from "../utils/timezone";
 import { IMapper } from "./base.mapper";
 import { OrderCanceledV1Payload } from "../models/events/order-canceled-v1.event";
 import { OrderDeliveredV1Payload } from "../models/events/order-delivered-v1.event";
+import { OrderPaidV1Payload } from "../models/events/order-paid-v1.event";
+import { OrderItemsUpdatedV1Payload } from "../models/events/order-updated-items-v1.event";
 
 export class OrderEventToOrderRepositoryDTOMapper extends IMapper<
   OrderEvent,
@@ -26,32 +28,12 @@ export class OrderEventToOrderRepositoryDTOMapper extends IMapper<
       OrderEventType[arg.EventType as keyof typeof OrderEventType];
     const ts = trMoment(arg.TS);
     const payload = JSON.parse(arg.Payload);
-    if (eventType === OrderEventType.OrderCreatedV1) {
-      return {
-        EventType: eventType,
-        ID: arg.OrderID,
-        Payload: payload as OrderCreatedV1Payload,
-        TS: ts,
-        Type: "Event",
-      };
-    } else if (eventType === OrderEventType.OrderCanceledV1) {
-      return {
-        EventType: eventType,
-        ID: arg.OrderID,
-        Payload: payload as OrderCanceledV1Payload,
-        TS: ts,
-        Type: "Event",
-      };
-    } else if (eventType === OrderEventType.OrderDeliveredV1) {
-      return {
-        EventType: eventType,
-        ID: arg.OrderID,
-        Payload: payload as OrderDeliveredV1Payload,
-        TS: ts,
-        Type: "Event",
-      };
-    } else {
-      throw new Error("Unsupported type");
-    }
+    return {
+      EventType: eventType,
+      ID: arg.OrderID,
+      Payload: payload,
+      TS: ts,
+      Type: "Event",
+    };
   }
 }

@@ -1,7 +1,12 @@
-import { object, string, number, InferType, array } from "yup";
+import { CityType, PaymentMethodType } from "@halapp/common";
+import { object, string, number, InferType, array, mixed } from "yup";
 
 const inputSchema = {
   body: object({
+    City: mixed<CityType>().oneOf(Object.values(CityType)).required(),
+    PaymentMethodType: mixed<PaymentMethodType>()
+      .oneOf(Object.values(PaymentMethodType))
+      .required(),
     OrganizationId: string().required(),
     Note: string().optional(),
     TS: string().required(),
