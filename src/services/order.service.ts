@@ -154,13 +154,19 @@ export default class OrderService {
       order.pickUp(updateUserId);
     } else if (newStatus === OrderStatusType.Delivered) {
       order.deliver(updateUserId);
+      await this.snsService.publishOrderDeliveredMessage({ order });
     }
     await this.repo.save(order);
     return order;
   }
   async updateItems(order: Order, newItems: OrderItem[], updateUserId: string) {
-    order.updateItems(newItems, updateUserId);
+    const { deletedItems } = order.updateItems(newItems, updateUserId);
     await this.repo.save(order);
+    await this.snsService.publishOrderItemsUpdatedMessage({
+      order: order,
+      deletedItems: deletedItems,
+    });
+
     return order;
   }
   async getAll({

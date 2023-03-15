@@ -238,17 +238,24 @@ class Order extends EventSourceAggregate<OrderEvent> {
     console.log("Order is completing");
     this.State.complete(completedBy);
   }
-  updateItems(currentItems: OrderItem[], updatedBy: string) {
+  updateItems(
+    proposedItems: OrderItem[],
+    updatedBy: string
+  ): { deletedItems: OrderItem[] } {
     console.log("Order Items are being updating");
+    const proposedItemsIds = proposedItems.map((i) => i.ProductId);
     // Only supports delete now
     const deletedItems = this.Items.filter(
-      (x) => !currentItems.map((i) => i.ProductId).includes(x.ProductId)
+      (x) => !proposedItemsIds.includes(x.ProductId)
     );
     this.State.updateItems(deletedItems, updatedBy);
     //[TO-DO] add insert item
-    if (!currentItems || currentItems.length === 0) {
+    if (!proposedItems || proposedItems.length === 0) {
       this.cancel(updatedBy);
     }
+    return {
+      deletedItems: deletedItems,
+    };
   }
   isPaid(): boolean {
     return this.RetroEvents.some(

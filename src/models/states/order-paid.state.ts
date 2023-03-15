@@ -3,6 +3,7 @@ import { trMoment } from "../../utils/timezone";
 import { OrderCompletedV1Event } from "../events/order-completed-v1.event";
 import { OrderDeliveredV1Event } from "../events/order-delivered-v1.event";
 import { OrderPickedUpV1Event } from "../events/order-pickedup-v1.event";
+import { Order } from "../order";
 import { OrderState } from "./order.state";
 
 class OrderPaidException extends Error {
@@ -58,7 +59,7 @@ class OrderPaidState extends OrderState {
     const event = <OrderCompletedV1Event>{
       ID: this.order.Id,
       EventType: OrderEventType.OrderCompletedV1,
-      TS: trMoment(),
+      TS: trMoment().add(1, "seconds"),
       Payload: {
         Status: OrderStatusType.Completed,
         CompletedBy: completedBy,

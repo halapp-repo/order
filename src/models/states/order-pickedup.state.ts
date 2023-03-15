@@ -25,6 +25,9 @@ class OrderPickUpState extends OrderState {
       },
     };
     this.order.causes(event);
+    if (this.order.isPaid()) {
+      this.order.complete(deliveredBy);
+    }
   }
   pay(paidBy: string): void {
     const event = <OrderPaidV1Event>{

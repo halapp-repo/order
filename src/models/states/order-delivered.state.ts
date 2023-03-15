@@ -2,6 +2,7 @@ import { OrderEventType, OrderStatusType } from "@halapp/common";
 import { trMoment } from "../../utils/timezone";
 import { OrderCompletedV1Event } from "../events/order-completed-v1.event";
 import { OrderPaidV1Event } from "../events/order-paid-v1.event";
+import { Order } from "../order";
 import { OrderState } from "./order.state";
 
 class OrderDeliveredException extends Error {
@@ -52,7 +53,7 @@ class OrderDeliveredState extends OrderState {
     const event = <OrderCompletedV1Event>{
       ID: this.order.Id,
       EventType: OrderEventType.OrderCompletedV1,
-      TS: trMoment(),
+      TS: trMoment().add(1, "seconds"),
       Payload: {
         Status: OrderStatusType.Completed,
         CompletedBy: completedBy,

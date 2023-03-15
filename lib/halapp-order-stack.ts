@@ -36,7 +36,7 @@ export class HalappOrderStack extends cdk.Stack {
     // **************
     // CREATE SNS TOPIC
     // **************
-    const orderCreatedTopic = this.createOrderCreatedSNSTopic(buildConfig);
+    const orderTopic = this.createOrderCreatedSNSTopic(buildConfig);
     // **************
     // CREATE LAMBDA HANDLERS
     // **************
@@ -45,7 +45,7 @@ export class HalappOrderStack extends cdk.Stack {
       orderApi,
       authorizer,
       orderDB,
-      orderCreatedTopic
+      orderTopic
     );
     this.createGetOrdersByOrganizationIdHandler(
       buildConfig,
@@ -59,13 +59,14 @@ export class HalappOrderStack extends cdk.Stack {
       orderApi,
       authorizer,
       orderDB,
-      orderCreatedTopic
+      orderTopic
     );
     this.createUpdateOrderItemsHandler(
       buildConfig,
       orderApi,
       authorizer,
-      orderDB
+      orderDB,
+      orderTopic
     );
     this.createGetOrdersHandler(buildConfig, orderApi, authorizer, orderDB);
   }
@@ -406,7 +407,8 @@ export class HalappOrderStack extends cdk.Stack {
     buildConfig: BuildConfig,
     orderApi: apiGateway.HttpApi,
     authorizer: apiGatewayAuthorizers.HttpUserPoolAuthorizer,
-    orderDB: cdk.aws_dynamodb.ITable
+    orderDB: cdk.aws_dynamodb.ITable,
+    orderTopic: cdk.aws_sns.Topic
   ) {
     const updateOrderItemsHandler = new NodejsFunction(
       this,
@@ -453,6 +455,7 @@ export class HalappOrderStack extends cdk.Stack {
         effect: iam.Effect.ALLOW,
       })
     );
+    orderTopic.grantPublish(updateOrderItemsHandler);
     orderDB.grantReadWriteData(updateOrderItemsHandler);
     return updateOrderItemsHandler;
   }
