@@ -6,6 +6,7 @@ import { Address } from "../models/address";
 import { Order, OrderItem } from "../models/order";
 import {
   CityType,
+  ExtraChargeService,
   OrderStatusType,
   OrganizationVM,
   PaymentMethodType,
@@ -33,7 +34,9 @@ export default class OrderService {
     @inject("OrganizationService")
     private organizationService: OrganizationService,
     @inject("OrderModelService")
-    private orderModelService: OrderModelService
+    private orderModelService: OrderModelService,
+    @inject("ExtraChargeService")
+    private extraChargeService: ExtraChargeService
   ) {}
   async create({
     city,
@@ -68,6 +71,13 @@ export default class OrderService {
       ts,
       note,
       deliveryTime,
+      extraCharges: this.extraChargeService.getExtraCharges({
+        orderPrice: items.reduce((acc, curr) => acc + curr.TotalPrice, 0),
+        balance:
+          paymentMethodType === PaymentMethodType.balance
+            ? organization.Balance
+            : undefined,
+      }),
     });
 
     const prices = await this.listingService.getActivePrices(

@@ -11,6 +11,7 @@ import { SNSStore } from "../repositories/sns-store";
 import { SNSService } from "../services/sns.service";
 import ListingService from "../services/listing.service";
 import { OrderModelService } from "../models/services/order.model.service";
+import { ExtraChargeService } from "@halapp/common";
 
 container.registerSingleton<DynamoStore>("DBStore", DynamoStore);
 container.registerSingleton<LambdaStore>("LambdaStore", LambdaStore);
@@ -42,6 +43,9 @@ container.register("SNSService", {
 });
 container.register("OrderModelService", {
   useClass: OrderModelService,
+});
+container.register("ExtraChargeService", {
+  useClass: ExtraChargeService,
 });
 
 export const diContainer = container;

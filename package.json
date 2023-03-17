@@ -35,7 +35,7 @@
     "@aws-sdk/client-lambda": "^3.241.0",
     "@aws-sdk/client-sns": "^3.245.0",
     "@aws-sdk/lib-dynamodb": "^3.238.0",
-    "@halapp/common": "^1.0.51",
+    "@halapp/common": "^1.0.65",
     "@middy/core": "^4.0.9",
     "@middy/http-cors": "^4.0.9",
     "@middy/http-error-handler": "^4.0.9",

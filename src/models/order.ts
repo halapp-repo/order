@@ -10,7 +10,7 @@ import {
   OrderEventType,
   PaymentMethodType,
 } from "@halapp/common";
-import { OrderStatusType } from "@halapp/common";
+import { OrderStatusType, ExtraCharge } from "@halapp/common";
 import { v4 as uuidv4 } from "uuid";
 import { OrderState } from "./states/order.state";
 import { OrderCreatedState } from "./states/order-created.state";
@@ -72,10 +72,15 @@ class Order extends EventSourceAggregate<OrderEvent> {
   City: CityType;
   PaymentMethodType: PaymentMethodType;
 
+  ExtraCharges?: ExtraCharge[];
+
   get TotalPrice(): number {
     let total = 0;
     for (const item of this.Items) {
       total += item.TotalPrice;
+    }
+    for (const charge of this.ExtraCharges || []) {
+      total += charge.Price;
     }
     return total;
   }
@@ -125,6 +130,7 @@ class Order extends EventSourceAggregate<OrderEvent> {
     note,
     items,
     deliveryTime,
+    extraCharges,
   }: {
     city: CityType;
     paymentMethodType: PaymentMethodType;
@@ -135,6 +141,7 @@ class Order extends EventSourceAggregate<OrderEvent> {
     note?: string;
     items: OrderItem[];
     deliveryTime: string;
+    extraCharges?: ExtraCharge[];
   }) {
     const id = uuidv4();
     const orderTS = trMoment(ts);
@@ -152,6 +159,7 @@ class Order extends EventSourceAggregate<OrderEvent> {
         Status: OrderStatusType.Created,
         Note: note,
         DeliveryTime: deliveryTime,
+        ExtraCharges: extraCharges,
       },
     };
     const order = new Order();
@@ -169,6 +177,7 @@ class Order extends EventSourceAggregate<OrderEvent> {
       Note,
       Status,
       DeliveryTime,
+      ExtraCharges,
     } = event.Payload;
     const { ID, TS } = event;
 
@@ -184,6 +193,7 @@ class Order extends EventSourceAggregate<OrderEvent> {
     this.DeliveryTime = trMoment(DeliveryTime);
     this.City = City;
     this.PaymentMethodType = PaymentMethodType;
+    this.ExtraCharges = ExtraCharges;
     // Set state
     this.setState(new OrderCreatedState(this));
   }
