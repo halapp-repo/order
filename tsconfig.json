@@ -27,7 +27,8 @@
     "inlineSources": true,
     "sourceMap": true,
     "outDir": "build",
-    "rootDir": "src"
+    "rootDir": "src",
+    "jsx": "react",
   },
   "include": ["src/**/*"],
   "exclude": [

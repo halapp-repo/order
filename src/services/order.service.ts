@@ -118,15 +118,15 @@ export default class OrderService {
     toDate?: moment.Moment;
     status?: OrderStatusType;
   }): Promise<Order[]> {
-    if (!fromDate) {
+    if (typeof fromDate === "undefined" || !moment.isMoment(fromDate)) {
       fromDate = trMoment("20230101", "YYYYMMDD");
     }
-    if (!toDate) {
+    if (typeof toDate === "undefined" || !moment.isMoment(toDate)) {
       toDate = trMoment();
     }
     let orderIds;
     if (!status) {
-      orderIds = await this.repo.getIdsByOrgId(orgId, fromDate, toDate);
+      orderIds = await this.repo.getIdsByOrgId(orgId, fromDate!, toDate!);
     } else {
       orderIds = await this.repo.getIdsByStatus(status, orgId);
     }

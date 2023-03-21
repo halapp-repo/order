@@ -10,9 +10,7 @@ export default class OrganizationService {
     @inject("LambdaStore")
     private lambdaStore: LambdaStore
   ) {}
-  async getOrganization(
-    organizationId: string
-  ): Promise<OrganizationVM | undefined> {
+  async getOrganization(organizationId: string): Promise<OrganizationVM> {
     const { Payload } = await this.lambdaStore.lambdaClient.send(
       new InvokeCommand({
         InvocationType: "RequestResponse",
@@ -24,7 +22,7 @@ export default class OrganizationService {
       })
     );
     if (!Payload) {
-      return undefined;
+      throw new Error("No Organization found");
     }
     const result = JSON.parse(Buffer.from(Payload).toString());
     const organization = plainToInstance(
