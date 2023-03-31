@@ -6,6 +6,7 @@ import { Address } from "../models/address";
 import { Order, OrderItem } from "../models/order";
 import {
   CityType,
+  ExtraChargeService,
   OrderStatusType,
   OrganizationVM,
   PaymentMethodType,
@@ -33,7 +34,9 @@ export default class OrderService {
     @inject("OrganizationService")
     private organizationService: OrganizationService,
     @inject("OrderModelService")
-    private orderModelService: OrderModelService
+    private orderModelService: OrderModelService,
+    @inject("ExtraChargeService")
+    private extraChargeService: ExtraChargeService
   ) {}
   async create({
     city,
@@ -68,6 +71,13 @@ export default class OrderService {
       ts,
       note,
       deliveryTime,
+      extraCharges: this.extraChargeService.getExtraCharges({
+        orderPrice: items.reduce((acc, curr) => acc + curr.TotalPrice, 0),
+        balance:
+          paymentMethodType === PaymentMethodType.balance
+            ? organization.Balance
+            : undefined,
+      }),
     });
 
     const prices = await this.listingService.getActivePrices(
@@ -108,15 +118,15 @@ export default class OrderService {
     toDate?: moment.Moment;
     status?: OrderStatusType;
   }): Promise<Order[]> {
-    if (!fromDate) {
+    if (typeof fromDate === "undefined" || !moment.isMoment(fromDate)) {
       fromDate = trMoment("20230101", "YYYYMMDD");
     }
-    if (!toDate) {
+    if (typeof toDate === "undefined" || !moment.isMoment(toDate)) {
       toDate = trMoment();
     }
     let orderIds;
     if (!status) {
-      orderIds = await this.repo.getIdsByOrgId(orgId, fromDate, toDate);
+      orderIds = await this.repo.getIdsByOrgId(orgId, fromDate!, toDate!);
     } else {
       orderIds = await this.repo.getIdsByStatus(status, orgId);
     }
@@ -154,13 +164,19 @@ export default class OrderService {
       order.pickUp(updateUserId);
     } else if (newStatus === OrderStatusType.Delivered) {
       order.deliver(updateUserId);
+      await this.snsService.publishOrderDeliveredMessage({ order });
     }
     await this.repo.save(order);
     return order;
   }
   async updateItems(order: Order, newItems: OrderItem[], updateUserId: string) {
-    order.updateItems(newItems, updateUserId);
+    const { deletedItems } = order.updateItems(newItems, updateUserId);
     await this.repo.save(order);
+    await this.snsService.publishOrderItemsUpdatedMessage({
+      order: order,
+      deletedItems: deletedItems,
+    });
+
     return order;
   }
   async getAll({

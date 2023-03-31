@@ -28,6 +28,8 @@ export class OrderToOrderViewModelMapper extends IMapper<Order, OrderVM> {
       DeliveryTime: arg.DeliveryTime.format(),
       Status: arg.Status,
       Note: arg.Note,
+      ExtraCharges: arg.ExtraCharges,
+      TotalPrice: arg.TotalPrice,
       Items: arg.Items.map((i) => {
         return {
           Count: i.Count,

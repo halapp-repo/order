@@ -2,6 +2,7 @@ import { Address } from "../address";
 import { OrderItem } from "../order";
 import {
   CityType,
+  ExtraCharge,
   OrderEventType,
   OrderStatusType,
   PaymentMethodType,
@@ -17,6 +18,7 @@ interface OrderCreatedV1Payload {
   Items: OrderItem[];
   Status: OrderStatusType.Created;
   DeliveryTime: string;
+  ExtraCharges?: ExtraCharge[];
 }
 
 type OrderCreatedV1Event = {

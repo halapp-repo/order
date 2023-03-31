@@ -18,6 +18,7 @@ import { inputSchema, CreateOrderDTO } from "./input.schema";
 import { OrderItem } from "../../../models/order";
 import { OrderToOrderViewModelMapper } from "../../../mappers/order-to-order-viewmodel.mapper";
 import OrganizationService from "../../../services/organization.service";
+import { plainToInstance } from "class-transformer";
 
 interface Event<TBody>
   extends Omit<APIGatewayProxyEventV2WithJWTAuthorizer, "body"> {
@@ -61,14 +62,13 @@ const lambdaHandler = async function (
     paymentMethodType: event.body.PaymentMethodType,
     createdBy: currentUserId,
     deliveryAddress: event.body.DeliveryAddress,
-    items: event.body.Items.map(
-      (i) =>
-        ({
-          Count: i.Count,
-          Price: i.Price,
-          ProductId: i.ProductId,
-          Unit: i.Unit,
-        } as OrderItem)
+    items: event.body.Items.map((i) =>
+      plainToInstance(OrderItem, {
+        Count: i.Count,
+        Price: i.Price,
+        ProductId: i.ProductId,
+        Unit: i.Unit,
+      } as OrderItem)
     ),
     note: event.body.Note,
     organization: organization,

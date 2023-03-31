@@ -1,5 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import * as sns from "aws-cdk-lib/aws-sns";
+import * as sqs from "aws-cdk-lib/aws-sqs";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import * as path from "path";
 import * as iam from "aws-cdk-lib/aws-iam";
@@ -13,6 +15,9 @@ import { NodejsFunction, LogLevel } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import getConfig from "../config";
 import { BuildConfig } from "./build-config";
+import { Effect, PolicyStatement, ServicePrincipal } from "aws-cdk-lib/aws-iam";
+import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
+import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 
 export class HalappOrderStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -21,6 +26,23 @@ export class HalappOrderStack extends cdk.Stack {
     // BUILD CONFIG
     //******************
     const buildConfig = getConfig(scope as cdk.App);
+    ///*************
+    // S3 BUCKET
+    ///*************
+    const documentBucket = this.createDocumentBucket(buildConfig);
+    // 👇 layer we've written
+    const chromiumLayer = new lambda.LayerVersion(
+      this,
+      "chromiumLayerV111.0.0-layer",
+      {
+        compatibleRuntimes: [
+          lambda.Runtime.NODEJS_18_X,
+          lambda.Runtime.NODEJS_16_X,
+        ],
+        code: lambda.Code.fromAsset("./layers/chromium-v111.0.0-layer.zip"),
+        description: "chromium v:111.0.0",
+      }
+    );
     ///*************
     // Import Authorizer
     ///***************
@@ -36,7 +58,11 @@ export class HalappOrderStack extends cdk.Stack {
     // **************
     // CREATE SNS TOPIC
     // **************
-    const orderCreatedTopic = this.createOrderCreatedSNSTopic(buildConfig);
+    const orderTopic = this.createOrderCreatedSNSTopic(buildConfig);
+    // **************
+    // CREATE SNS TOPIC
+    // **************
+    const orderQueue = this.createOrderQueue(buildConfig, orderTopic);
     // **************
     // CREATE LAMBDA HANDLERS
     // **************
@@ -45,7 +71,7 @@ export class HalappOrderStack extends cdk.Stack {
       orderApi,
       authorizer,
       orderDB,
-      orderCreatedTopic
+      orderTopic
     );
     this.createGetOrdersByOrganizationIdHandler(
       buildConfig,
@@ -59,15 +85,22 @@ export class HalappOrderStack extends cdk.Stack {
       orderApi,
       authorizer,
       orderDB,
-      orderCreatedTopic
+      orderTopic
     );
     this.createUpdateOrderItemsHandler(
       buildConfig,
       orderApi,
       authorizer,
-      orderDB
+      orderDB,
+      orderTopic
     );
     this.createGetOrdersHandler(buildConfig, orderApi, authorizer, orderDB);
+    this.createOrderSQSHandler(
+      buildConfig,
+      orderQueue,
+      documentBucket,
+      chromiumLayer
+    );
   }
   createOrderApiGateway(buildConfig: BuildConfig): apiGateway.HttpApi {
     const orderApi = new apiGateway.HttpApi(this, "HalAppOrderApi", {
@@ -182,7 +215,6 @@ export class HalappOrderStack extends cdk.Stack {
     }
     return orderTable;
   }
-
   createOrderCreatedSNSTopic(buildConfig: BuildConfig): cdk.aws_sns.Topic {
     const orderCreatedTopic = new sns.Topic(this, "OrderSNSTopic", {
       displayName: buildConfig.SNSOrderTopic,
@@ -219,7 +251,7 @@ export class HalappOrderStack extends cdk.Stack {
           Region: buildConfig.Region,
           OrderDB: buildConfig.OrderDBName,
           GetOrganizationHandler: "Account-GetOrganizationHandler",
-          ListingPriceHandler: buildConfig.ListingPriceHandler,
+          ListingPriceHandler: buildConfig.LAMBDAListingGETPriceHandler,
           SNSTopicArn: `arn:aws:sns:${buildConfig.Region}:${buildConfig.AccountID}:${buildConfig.SNSOrderTopic}`,
         },
       }
@@ -406,7 +438,8 @@ export class HalappOrderStack extends cdk.Stack {
     buildConfig: BuildConfig,
     orderApi: apiGateway.HttpApi,
     authorizer: apiGatewayAuthorizers.HttpUserPoolAuthorizer,
-    orderDB: cdk.aws_dynamodb.ITable
+    orderDB: cdk.aws_dynamodb.ITable,
+    orderTopic: cdk.aws_sns.Topic
   ) {
     const updateOrderItemsHandler = new NodejsFunction(
       this,
@@ -453,6 +486,7 @@ export class HalappOrderStack extends cdk.Stack {
         effect: iam.Effect.ALLOW,
       })
     );
+    orderTopic.grantPublish(updateOrderItemsHandler);
     orderDB.grantReadWriteData(updateOrderItemsHandler);
     return updateOrderItemsHandler;
   }
@@ -495,5 +529,123 @@ export class HalappOrderStack extends cdk.Stack {
     });
     orderDB.grantReadData(getOrderHandler);
     return getOrderHandler;
+  }
+  createDocumentBucket(buildConfig: BuildConfig): cdk.aws_s3.Bucket {
+    const documentBucket = new s3.Bucket(this, "HalDocument", {
+      bucketName: `hal-document-${this.account}`,
+      autoDeleteObjects: false,
+      versioned: true,
+      publicReadAccess: true,
+      lifecycleRules: [
+        {
+          prefix: "/contracts",
+          transitions: [
+            {
+              storageClass: s3.StorageClass.INFREQUENT_ACCESS,
+              transitionAfter: cdk.Duration.days(30),
+            },
+            {
+              storageClass: s3.StorageClass.GLACIER,
+              transitionAfter: cdk.Duration.days(60),
+            },
+          ],
+          expiration: cdk.Duration.days(1095),
+        },
+      ],
+    });
+    return documentBucket;
+  }
+  createOrderQueue(
+    buildConfig: BuildConfig,
+    orderTopic: cdk.aws_sns.Topic
+  ): cdk.aws_sqs.Queue {
+    const orderCreatedDLQ = new sqs.Queue(this, "Order-OrderDLQ", {
+      queueName: "Order-OrderDLQ",
+      retentionPeriod: cdk.Duration.hours(10),
+    });
+    const orderQueue = new sqs.Queue(this, "Order-OrderQueue", {
+      queueName: "Order-OrderQueue",
+      visibilityTimeout: cdk.Duration.minutes(2),
+      receiveMessageWaitTime: cdk.Duration.seconds(5),
+      retentionPeriod: cdk.Duration.days(1),
+      deadLetterQueue: {
+        queue: orderCreatedDLQ,
+        maxReceiveCount: 4,
+      },
+    });
+    orderQueue.addToResourcePolicy(
+      new PolicyStatement({
+        effect: Effect.ALLOW,
+        principals: [new ServicePrincipal("sns.amazonaws.com")],
+        actions: ["sqs:SendMessage"],
+        resources: [orderQueue.queueArn],
+        conditions: {
+          StringEquals: {
+            "aws:SourceAccount": this.account,
+          },
+          ArnLike: {
+            "aws:SourceArn": `arn:aws:sns:*:*:${buildConfig.SNSOrderTopic}`,
+          },
+        },
+      })
+    );
+    orderTopic.addSubscription(new subs.SqsSubscription(orderQueue));
+    return orderQueue;
+  }
+  createOrderSQSHandler(
+    buildConfig: BuildConfig,
+    orderSQS: cdk.aws_sqs.Queue,
+    documentBucket: cdk.aws_s3.Bucket,
+    chromiumLayer: cdk.aws_lambda.LayerVersion
+  ): cdk.aws_lambda_nodejs.NodejsFunction {
+    const orderCreatedHandler = new NodejsFunction(
+      this,
+      "Order-SQSOrderHandler",
+      {
+        memorySize: 1024,
+        timeout: cdk.Duration.minutes(1),
+        functionName: "Order-SQSOrderHandler",
+        runtime: lambda.Runtime.NODEJS_18_X,
+        handler: "handler",
+        entry: path.join(__dirname, `/../src/handlers/orders/sqs/index.ts`),
+        bundling: {
+          target: "es2020",
+          keepNames: true,
+          logLevel: LogLevel.INFO,
+          sourceMap: true,
+          minify: true,
+          externalModules: [
+            "aws-sdk", // Use the 'aws-sdk' available in the Lambda runtime
+            "@sparticuz/chromium",
+          ],
+        },
+        environment: {
+          NODE_OPTIONS: "--enable-source-maps",
+          Region: buildConfig.Region,
+          S3BucketName: documentBucket.bucketName,
+          GetOrganizationHandler:
+            buildConfig.LAMBDAAccountGetOrganizationHandler,
+          LAMBDAAccountGetOrganizationHandler:
+            buildConfig.LAMBDAAccountGetOrganizationHandler,
+          LAMBDAListingGetInventoriesHandler:
+            buildConfig.LAMBDAListingGetInventoriesHandler,
+        },
+        layers: [chromiumLayer],
+      }
+    );
+    orderCreatedHandler.addEventSource(
+      new SqsEventSource(orderSQS, {
+        batchSize: 1,
+      })
+    );
+    orderCreatedHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["lambda:InvokeFunction"],
+        resources: ["*"],
+        effect: iam.Effect.ALLOW,
+      })
+    );
+    documentBucket.grantWrite(orderCreatedHandler);
+    return orderCreatedHandler;
   }
 }

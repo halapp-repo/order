@@ -16,6 +16,7 @@ import httpJsonBodyParser from "@middy/http-json-body-parser";
 import schemaValidatorMiddleware from "../../../../../middlewares/schema-validator.middleware";
 import { inputSchema, UpdateOrderItemsDTO } from "./input.schema";
 import { OrderItem } from "../../../../../models/order";
+import adminValidatorMiddleware from "../../../../../middlewares/admin-validator.middleware";
 
 interface Event<TBody>
   extends Omit<APIGatewayProxyEventV2WithJWTAuthorizer, "body"> {
@@ -40,16 +41,10 @@ const lambdaHandler = async function (
   const currentUserId = event.requestContext.authorizer.jwt.claims[
     "sub"
   ] as string;
-  const isAdmin = event.requestContext.authorizer.jwt.claims[
-    "custom:isAdmin"
-  ] as boolean;
 
   // Get order
   const order = await orderService.getById(orderId);
-  // Authorize Step 2
-  if (!isAdmin) {
-    throw createHttpError.Unauthorized();
-  }
+
   await orderService.updateItems(
     order,
     event.body.Items.map(
@@ -83,5 +78,6 @@ const handler = middy(lambdaHandler)
       }),
     })
   )
+  .use(adminValidatorMiddleware())
   .use(schemaValidatorMiddleware(inputSchema));
 export { handler, lambdaHandler };

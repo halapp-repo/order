@@ -12,5 +12,7 @@ export interface BuildConfig {
 
   readonly SNSOrderTopic: string;
 
-  readonly ListingPriceHandler: "Listing-GetPricesHandler";
+  readonly LAMBDAListingGETPriceHandler: "Listing-GetPricesHandler";
+  readonly LAMBDAAccountGetOrganizationHandler: string;
+  readonly LAMBDAListingGetInventoriesHandler: string;
 }
