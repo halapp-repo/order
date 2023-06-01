@@ -93,12 +93,7 @@ export default class OrderService {
     ) {
       throw createHttpError.BadRequest();
     }
-    if (
-      paymentMethodType === PaymentMethodType.card ||
-      organization.Balance >= order.TotalPrice
-    ) {
-      order.pay(createdBy);
-    }
+    order.pay(paymentMethodType, createdBy);
     // Save Order
     await this.repo.save(order);
     // Send Notification

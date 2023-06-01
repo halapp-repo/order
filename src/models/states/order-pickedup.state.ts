@@ -1,7 +1,6 @@
 import { OrderEventType, OrderStatusType } from "@halapp/common";
 import { trMoment } from "../../utils/timezone";
 import { OrderDeliveredV1Event } from "../events/order-delivered-v1.event";
-import { OrderPaidV1Event } from "../events/order-paid-v1.event";
 import { OrderState } from "./order.state";
 
 class OrderPickUpException extends Error {
@@ -29,17 +28,8 @@ class OrderPickUpState extends OrderState {
       this.order.complete(deliveredBy);
     }
   }
-  pay(paidBy: string): void {
-    const event = <OrderPaidV1Event>{
-      ID: this.order.Id,
-      EventType: OrderEventType.OrderPaidV1,
-      TS: trMoment(),
-      Payload: {
-        Status: OrderStatusType.Paid,
-        PaidBy: paidBy,
-      },
-    };
-    this.order.causes(event);
+  pay(): void {
+    throw new OrderPickUpException("Pickedup order can not be paid");
   }
   updateItems(): void {
     throw new OrderPickUpException("Pickedup order can not be updated");

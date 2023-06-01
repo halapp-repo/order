@@ -16,10 +16,11 @@ import { S3Store } from "../repositories/s3-store";
 import S3Service from "../services/s3.service";
 import PDFService from "../services/pdf.service";
 import InventoryRepository from "../repositories/inventory.repository";
+import { DBSTORE, LAMBDASTORE, SNSSTORE } from "../models/constants";
 
-container.registerSingleton<DynamoStore>("DBStore", DynamoStore);
-container.registerSingleton<LambdaStore>("LambdaStore", LambdaStore);
-container.registerSingleton<SNSStore>("SNSStore", SNSStore);
+container.registerSingleton<DynamoStore>(DBSTORE, DynamoStore);
+container.registerSingleton<LambdaStore>(LAMBDASTORE, LambdaStore);
+container.registerSingleton<SNSStore>(SNSSTORE, SNSStore);
 container.registerSingleton<S3Store>("S3Store", S3Store);
 
 container.register("OrderRepository", {

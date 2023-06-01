@@ -19,6 +19,7 @@
     "noFallthroughCasesInSwitch": false,
     // "inlineSourceMap": true,
     "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "strictPropertyInitialization": false,
     "typeRoots": [
       "./node_modules/@types"

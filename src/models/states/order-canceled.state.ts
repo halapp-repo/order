@@ -7,7 +7,7 @@ class OrderCanceledException extends Error {
 }
 
 class OrderCanceledState extends OrderState {
-  cancel() {
+  cancel(): void {
     throw new OrderCanceledException("Canceled order can not be canceled");
   }
   deliver(): void {
@@ -19,10 +19,10 @@ class OrderCanceledState extends OrderState {
   updateItems(): void {
     throw new OrderCanceledException("Canceled order can not be updated");
   }
-  pickup(pickedUp: string): void {
+  pickup(): void {
     throw new OrderCanceledException("Canceled order can not be picked-up");
   }
-  complete(completedBy: string): void {
+  complete(): void {
     throw new OrderCanceledException("Canceled order can not be completed");
   }
 }

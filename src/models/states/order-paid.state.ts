@@ -1,9 +1,9 @@
 import { OrderEventType, OrderStatusType } from "@halapp/common";
 import { trMoment } from "../../utils/timezone";
-import { OrderCompletedV1Event } from "../events/order-completed-v1.event";
-import { OrderDeliveredV1Event } from "../events/order-delivered-v1.event";
+import { OrderCanceledV1Event } from "../events/order-canceled-v1.event";
 import { OrderPickedUpV1Event } from "../events/order-pickedup-v1.event";
-import { Order } from "../order";
+import { OrderItemsUpdatedV1Event } from "../events/order-updated-items-v1.event";
+import { OrderItem } from "../order";
 import { OrderState } from "./order.state";
 
 class OrderPaidException extends Error {
@@ -13,32 +13,35 @@ class OrderPaidException extends Error {
 }
 
 class OrderPaidState extends OrderState {
-  cancel() {
-    throw new OrderPaidException("Paid order can not be canceled");
-  }
-  deliver(deliveredBy: string): void {
-    if (this.order.isDelivered()) {
-      throw new OrderPaidException(
-        "Delivered order can not be delivered twice"
-      );
-    }
-    const event = <OrderDeliveredV1Event>{
+  cancel(canceledBy: string) {
+    const event = <OrderCanceledV1Event>{
       ID: this.order.Id,
-      EventType: OrderEventType.OrderDeliveredV1,
+      EventType: OrderEventType.OrderCanceledV1,
       TS: trMoment(),
       Payload: {
-        Status: OrderStatusType.Delivered,
-        DeliveredBy: deliveredBy,
+        Status: OrderStatusType.Canceled,
+        CanceledBy: canceledBy,
       },
     };
     this.order.causes(event);
-    this.order.complete(deliveredBy);
+  }
+  deliver(): void {
+    throw new OrderPaidException("Paid order can not be delivered");
   }
   pay(): void {
     throw new OrderPaidException("Paid order can not be paid");
   }
-  updateItems(): void {
-    throw new OrderPaidException("Paid order can not be updated");
+  updateItems(deletedItems: OrderItem[], updatedBy: string): void {
+    const event = <OrderItemsUpdatedV1Event>{
+      ID: this.order.Id,
+      EventType: OrderEventType.OrderItemsUpdatedV1,
+      TS: trMoment(),
+      Payload: {
+        UpdatedBy: updatedBy,
+        DeletedItems: deletedItems,
+      },
+    };
+    this.order.causes(event);
   }
   pickup(pickedUp: string): void {
     const event = <OrderPickedUpV1Event>{
@@ -52,20 +55,8 @@ class OrderPaidState extends OrderState {
     };
     this.order.causes(event);
   }
-  complete(completedBy: string): void {
-    if (!this.order.isDelivered()) {
-      throw new OrderPaidException("Undelivered order can not be completed");
-    }
-    const event = <OrderCompletedV1Event>{
-      ID: this.order.Id,
-      EventType: OrderEventType.OrderCompletedV1,
-      TS: trMoment().add(1, "seconds"),
-      Payload: {
-        Status: OrderStatusType.Completed,
-        CompletedBy: completedBy,
-      },
-    };
-    this.order.causes(event);
+  complete(): void {
+    throw new OrderPaidException("Paid order can not be completed");
   }
 }
 

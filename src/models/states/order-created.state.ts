@@ -1,4 +1,8 @@
-import { OrderEventType, OrderStatusType } from "@halapp/common";
+import {
+  OrderEventType,
+  OrderStatusType,
+  PaymentMethodType,
+} from "@halapp/common";
 import { trMoment } from "../../utils/timezone";
 import { OrderCanceledV1Event } from "../events/order-canceled-v1.event";
 import { OrderPaidV1Event } from "../events/order-paid-v1.event";
@@ -29,7 +33,7 @@ class OrderCreatedState extends OrderState {
   deliver(): void {
     throw new OrderCreatedException("Created order can not be delivered");
   }
-  pay(paidBy: string): void {
+  pay(paymentMethodType: PaymentMethodType, paidBy: string): void {
     const event = <OrderPaidV1Event>{
       ID: this.order.Id,
       EventType: OrderEventType.OrderPaidV1,
@@ -37,6 +41,7 @@ class OrderCreatedState extends OrderState {
       Payload: {
         Status: OrderStatusType.Paid,
         PaidBy: paidBy,
+        PaymentMethodType: paymentMethodType,
       },
     };
     this.order.causes(event);
@@ -65,7 +70,7 @@ class OrderCreatedState extends OrderState {
     };
     this.order.causes(event);
   }
-  complete(completedBy: string): void {
+  complete(): void {
     throw new OrderCreatedException("Created order can not be completed");
   }
 }

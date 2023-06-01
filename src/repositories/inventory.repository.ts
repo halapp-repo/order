@@ -4,11 +4,12 @@ import { LambdaStore } from "./lambda-store";
 import { InvokeCommand } from "@aws-sdk/client-lambda";
 import { plainToInstance } from "class-transformer";
 import { APIGatewayEvent } from "aws-lambda";
+import { LAMBDASTORE } from "../models/constants";
 
 @injectable()
 export default class InventoryRepository {
   constructor(
-    @inject("LambdaStore")
+    @inject(LAMBDASTORE)
     private lambdaStore: LambdaStore
   ) {}
   async fetchAll(): Promise<InventoryVM[]> {

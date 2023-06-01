@@ -1,4 +1,4 @@
-import { OrganizationVM, PaymentMethodType, PriceVM } from "@halapp/common";
+import { PaymentMethodType, PriceVM } from "@halapp/common";
 import { Order } from "../order";
 
 export class OrderModelService {

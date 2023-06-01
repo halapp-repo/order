@@ -3,11 +3,12 @@ import { InvokeCommand } from "@aws-sdk/client-lambda";
 import { LambdaStore } from "../repositories/lambda-store";
 import { plainToInstance } from "class-transformer";
 import { OrganizationVM } from "@halapp/common";
+import { LAMBDASTORE } from "../models/constants";
 
 @injectable()
 export default class OrganizationService {
   constructor(
-    @inject("LambdaStore")
+    @inject(LAMBDASTORE)
     private lambdaStore: LambdaStore
   ) {}
   async getOrganization(organizationId: string): Promise<OrganizationVM> {

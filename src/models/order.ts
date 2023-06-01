@@ -240,9 +240,9 @@ class Order extends EventSourceAggregate<OrderEvent> {
     console.log("Order is delivering");
     this.State.deliver(deliveredBy);
   }
-  pay(paidBy: string) {
+  pay(paymentMethodType: PaymentMethodType, paidBy: string) {
     console.log("Order is paying");
-    this.State.pay(paidBy);
+    this.State.pay(paymentMethodType, paidBy);
   }
   complete(completedBy: string) {
     console.log("Order is completing");

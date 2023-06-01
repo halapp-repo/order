@@ -12,12 +12,13 @@ import {
 } from "@halapp/common";
 import { Order, OrderItem } from "../models/order";
 import { OrderToOrderViewModelMapper } from "../mappers/order-to-order-viewmodel.mapper";
+import { SNSSTORE } from "../models/constants";
 
 @injectable()
 export class SNSService {
   topicArn: string;
   constructor(
-    @inject("SNSStore")
+    @inject(SNSSTORE)
     private snsStore: SNSStore,
     @inject("OrderToOrderViewModelMapper")
     private viewModelMapper: OrderToOrderViewModelMapper

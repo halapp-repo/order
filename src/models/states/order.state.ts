@@ -6,7 +6,7 @@ abstract class OrderState {
   abstract pickup(pickedUp: string): void;
   abstract cancel(canceledBy: string): void;
   abstract deliver(deliveredBy: string): void;
-  abstract pay(paidBy: string): void;
+  abstract pay(paymentMethodType: PaymentMethodType, paidBy: string): void;
   abstract updateItems(deletedItems: OrderItem[], updatedBy: string): void;
   abstract complete(completedBy: string): void;
 }

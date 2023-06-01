@@ -1,8 +1,13 @@
-import { OrderEventType, OrderStatusType } from "@halapp/common";
+import {
+  OrderEventType,
+  OrderStatusType,
+  PaymentMethodType,
+} from "@halapp/common";
 
 interface OrderPaidV1Payload {
   Status: OrderStatusType.Paid;
   PaidBy: string;
+  PaymentMethodType: PaymentMethodType;
 }
 
 type OrderPaidV1Event = {

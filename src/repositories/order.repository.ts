@@ -9,13 +9,14 @@ import { OrderEventRepositoryDTO } from "../models/dtos/order.event.repository.d
 import { getComparator } from "../utils/sort";
 import moment = require("moment");
 import { OrderStatusType } from "@halapp/common";
+import { DBSTORE } from "../models/constants";
 
 @injectable()
 export default class OrderRepository {
   private tableName: string;
 
   constructor(
-    @inject("DBStore")
+    @inject(DBSTORE)
     private store: DynamoStore,
     @inject("OrderEventToOrderRepositoryDTOMapper")
     private eventDTOMapper: OrderEventToOrderRepositoryDTOMapper,

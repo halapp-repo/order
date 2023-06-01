@@ -19,10 +19,10 @@ class OrderCompletedState extends OrderState {
   updateItems(): void {
     throw new OrderCompletedException("Completed order can not be updated");
   }
-  pickup(pickedUp: string): void {
+  pickup(): void {
     throw new OrderCompletedException("Completed order can not be picked-up");
   }
-  complete(completedBy: string): void {
+  complete(): void {
     throw new OrderCompletedException("Completed order can not be completed");
   }
 }

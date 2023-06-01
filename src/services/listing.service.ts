@@ -3,12 +3,12 @@ import { InvokeCommand } from "@aws-sdk/client-lambda";
 import { LambdaStore } from "../repositories/lambda-store";
 import { CityType, ProductType } from "@halapp/common";
 import { PriceVM } from "@halapp/common";
-import { plainToClass, plainToInstance } from "class-transformer";
+import { LAMBDASTORE } from "../models/constants";
 
 @injectable()
 export default class ListingService {
   constructor(
-    @inject("LambdaStore")
+    @inject(LAMBDASTORE)
     private lambdaStore: LambdaStore
   ) {}
   async getActivePrices(city: CityType, type: ProductType): Promise<PriceVM[]> {
